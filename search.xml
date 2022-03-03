@@ -1,0 +1,947 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>01 Python遗传算法实例</title>
+    <url>/2022/02/10/01-Python%E9%81%97%E4%BC%A0%E7%AE%97%E6%B3%95%E5%AE%9E%E4%BE%8B/</url>
+    <content><![CDATA[<h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><ul>
+<li>在一个长度为 n 的数组 nums 中选择 10 个元素，使得 10 个元素的和与原数组的所有元素之和的 1&#x2F;10 无限接近</li>
+<li>如 n &#x3D; 50,  sum(nums) &#x3D; 1000, 选择的元素列表 answer 要满足 |sum(answer) - 100| &lt; e, e尽可能小</li>
+</ul>
+<h2 id="求解过程"><a href="#求解过程" class="headerlink" title="求解过程"></a>求解过程</h2><h3 id="创建随机解集"><a href="#创建随机解集" class="headerlink" title="创建随机解集"></a>创建随机解集</h3><ul>
+<li>创建包含 100 个解的初始解集</li>
+<li>def creat_answer()<span id="more"></span></li>
+<li><strong>random 库</strong><ul>
+<li>random.sample(list, number)  在 list 中随机抽取 number 个元素</li>
+</ul>
+</li>
+</ul>
+<h3 id="两解交配"><a href="#两解交配" class="headerlink" title="两解交配"></a>两解交配</h3><ul>
+<li>对解集中每两个解进行选择交换</li>
+<li>def choice_selected()</li>
+</ul>
+<h4 id="思路：选择优秀的交换"><a href="#思路：选择优秀的交换" class="headerlink" title="思路：选择优秀的交换"></a>思路：选择优秀的交换</h4><ul>
+<li>误差越小的解选择的几率就越大，所以设 选择概率 &#x3D; 1&#x2F;误差。</li>
+<li>为了使选择概率之和为1，接下来进行归一化。</li>
+</ul>
+<p>如何让我们的代码能够根据概率来选择呢？</p>
+<ul>
+<li><p>从 [0, 1] 中随机生成一个浮点数</p>
+</li>
+<li><p>将原先的概率列表叠加，值[i] &#x3D; 值[i] + 值[i-1]，如果随机生成的这个浮点数落在 值[i] 到 值[i+1]之间，则选取第 i+1 个解</p>
+</li>
+<li><p>后续将新的子体作为下一个族群即可，因为已经优胜劣汰</p>
+</li>
+</ul>
+<h3 id="解的变异"><a href="#解的变异" class="headerlink" title="解的变异"></a>解的变异</h3><p>概率变异，解中某元素随机替换为原始数组中的某个数</p>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 遗传算法实例</span></span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="comment"># 创建初始解集</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">creat_answer</span>(<span class="params">number_set, n</span>):</span><br><span class="line">    result = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">        result.append(random.sample(numbers_set,<span class="number">10</span>))</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line"><span class="comment"># 表示误差的列表</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">error_level</span>(<span class="params">new_answer, numbers_set</span>):</span><br><span class="line">    error = []</span><br><span class="line">    right_answer = <span class="built_in">sum</span>(numbers_set)/<span class="number">10</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> new_answer:</span><br><span class="line">        value = <span class="built_in">abs</span>(right_answer-<span class="built_in">sum</span>(item))</span><br><span class="line">        <span class="keyword">if</span> value == <span class="number">0</span>:</span><br><span class="line">            error.append(<span class="number">10</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            error.append(<span class="number">1</span>/value)</span><br><span class="line">    <span class="keyword">return</span> error</span><br><span class="line"><span class="comment"># 生成新的解</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">choice_selected</span>(<span class="params">old_answer,numbers_set</span>):</span><br><span class="line">    result = []</span><br><span class="line">    error = error_level(old_answer,numbers_set)</span><br><span class="line">    <span class="comment"># 归一化</span></span><br><span class="line">    error_one = [item/<span class="built_in">sum</span>(error) <span class="keyword">for</span> item <span class="keyword">in</span> error]</span><br><span class="line">    <span class="comment"># 叠加</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="built_in">len</span>(error_one)):</span><br><span class="line">        error_one[i] += error_one[i-<span class="number">1</span>]</span><br><span class="line">    <span class="comment"># 两两配对</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(old_answer)//<span class="number">2</span>):</span><br><span class="line">        temp = []</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>):</span><br><span class="line">            rand = random.uniform(<span class="number">0</span>,<span class="number">1</span>)</span><br><span class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(error_one)):</span><br><span class="line">                <span class="comment"># 边界情况</span></span><br><span class="line">                <span class="keyword">if</span> k==<span class="number">0</span>:</span><br><span class="line">                    <span class="keyword">if</span> rand&lt;error_one[k]:</span><br><span class="line">                        temp.append(old_answer[k])</span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    <span class="keyword">if</span> rand&gt;=error_one[k-<span class="number">1</span>] <span class="keyword">and</span> rand&lt;error_one[k]:</span><br><span class="line">                        temp.append(old_answer[k])</span><br><span class="line">        rand = random.randint(<span class="number">0</span>,<span class="number">6</span>) <span class="comment"># 每一个解中有10个片段_6+3=9</span></span><br><span class="line">        <span class="comment"># 交叉变异</span></span><br><span class="line">        temp_1 = temp[<span class="number">0</span>][:rand]+temp[<span class="number">1</span>][rand:rand+<span class="number">3</span>]+temp[<span class="number">0</span>][rand+<span class="number">3</span>:]</span><br><span class="line">        temp_2 = temp[<span class="number">1</span>][:rand]+temp[<span class="number">0</span>][rand:rand+<span class="number">3</span>]+temp[<span class="number">1</span>][rand+<span class="number">3</span>:]</span><br><span class="line">        result.append(temp_1)</span><br><span class="line">        result.append(temp_2)</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"><span class="comment"># 变异</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">variation</span>(<span class="params">old_answer, numbers_set, pro</span>):</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(old_answer)):</span><br><span class="line">        <span class="comment"># 随机生成一个浮点数，如果其&lt;pro,则变异</span></span><br><span class="line">        rand = random.uniform(<span class="number">0</span>,<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> rand&lt;pro:</span><br><span class="line">            <span class="comment"># 随机选取一个数替换</span></span><br><span class="line">            rand_num = random.randint(<span class="number">0</span>,<span class="number">9</span>)</span><br><span class="line">            old_answer[i] = old_answer[i][:rand_num]+random.sample(numbers_set,<span class="number">1</span>)+old_answer[i][rand_num+<span class="number">1</span>:]</span><br><span class="line">    <span class="keyword">return</span> old_answer</span><br><span class="line">numbers_set = random.sample(<span class="built_in">range</span>(<span class="number">0</span>, <span class="number">1000</span>), <span class="number">50</span>) <span class="comment">#在0-1000中随机抽取50个作为数组</span></span><br><span class="line">middle_answer = creat_answer(numbers_set, <span class="number">100</span>)</span><br><span class="line">great_answer = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10000</span>):</span><br><span class="line">    middle_answer = choice_selected(middle_answer, numbers_set)</span><br><span class="line">    middle_answer = variation(middle_answer,numbers_set,<span class="number">0.1</span>)</span><br><span class="line">    error = error_level(middle_answer,numbers_set)</span><br><span class="line">    index = error.index(<span class="built_in">max</span>(error)) <span class="comment"># 误差最小的下标</span></span><br><span class="line">    great_answer.append([middle_answer[index],error[index]])</span><br><span class="line">great_answer.sort(key = <span class="keyword">lambda</span> x:x[<span class="number">1</span>],reverse = <span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;正确答案为:&quot;</span>,<span class="built_in">sum</span>(numbers_set)/<span class="number">10</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最优解为:&quot;</span>,great_answer[<span class="number">0</span>][<span class="number">0</span>])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;该和为:&quot;</span>,<span class="built_in">sum</span>(great_answer[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;选择系数为:&quot;</span>,great_answer[<span class="number">0</span>][<span class="number">1</span>])</span><br></pre></td></tr></table></figure>
+
+<h2 id="最终结果"><a href="#最终结果" class="headerlink" title="最终结果"></a>最终结果</h2><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220210135628087.png" alt="image-20220210135628087"></p>
+]]></content>
+      <categories>
+        <category>数学建模</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>遗传算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CSAPP-Lab02 Bomb Lab 记录</title>
+    <url>/2022/02/22/CSAPP-Lab02/</url>
+    <content><![CDATA[<blockquote>
+<p>GDB的全称是：GNU symbolic debugger。在做实验之前，了解常见的GDB命令是必不可少的。常见GDB命令可以访问：<a href="https://deconx.top/2022/02/22/gdb/">https://deconx.top/2022/02/22/gdb/</a></p>
+</blockquote>
+<h1 id="实验概览"><a href="#实验概览" class="headerlink" title="实验概览"></a>实验概览</h1><p><code>BombLab</code>提供给我们的文件非常简单，只有一个编译不了的C文件<code>bomb.c</code>，和一个目标代码文件<code>bomb</code>。当运行<code>bomb</code>文件时，它会要求输入6个字符串，如果其中的任何一句是错的，炸弹就会“爆炸”。我们必须利用反汇编工具逆向分析这个文件，并找到这6个字符串，从而“拆除”炸弹。</p>
+<p><strong>这个实验看起来就非常有趣！</strong></p>
+<p>运行一下<code>bomb</code>文件：<span id="more"></span></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220223193259282.png" alt="image-20220223193259282"></p>
+<p>提示我们输入内容，先随便输入试试！</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220224170832003.png" alt="image-20220224170832003"></p>
+<p><strong>BOOM!</strong> ，炸弹果然爆炸了！接下来就要进行紧张刺激的拆弹环节了。</p>
+<h1 id="实验过程"><a href="#实验过程" class="headerlink" title="实验过程"></a>实验过程</h1><h2 id="bomb-c代码分析"><a href="#bomb-c代码分析" class="headerlink" title="bomb.c代码分析"></a><code>bomb.c</code>代码分析</h2><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220225221607368.png" alt="image-20220225221607368"></p>
+<p>每一个<code>phase</code>的结构都是相同的，这里仅以<code>phase_1</code>为例。</p>
+<p>前两行将我们的输入传入<code>phase_1</code>函数中，如果函数能成功返回，则接下来调用<code>phase_defused</code>函数，从字面意思理解，此时炸弹就拆除成功了。</p>
+<p>那么炸弹什么时候爆炸呢，当然就是函数无法返回的时候了，猜测<code>phase_1</code>会调用一个中断程序，直接退出了程序。</p>
+<p>所以我们的任务就是分析每一个<code>phase_x</code>函数，使用正确的输入，使得函数能够成功返回。</p>
+<h2 id="phase-1"><a href="#phase-1" class="headerlink" title="phase_1"></a>phase_1</h2><h3 id="反汇编-phase-1"><a href="#反汇编-phase-1" class="headerlink" title="反汇编 phase_1"></a>反汇编 phase_1</h3><p>使用<code>gdb</code>的<code>disassemble</code>命令反汇编<code>phase_1</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function phase_1:</span><br><span class="line">   0x0000000000400ee0 &lt;+0&gt;:     sub    $0x8,%rsp</span><br><span class="line">   0x0000000000400ee4 &lt;+4&gt;:     mov    $0x402400,%esi</span><br><span class="line">   0x0000000000400ee9 &lt;+9&gt;:     callq  0x401338 &lt;strings_not_equal&gt;</span><br><span class="line">   0x0000000000400eee &lt;+14&gt;:    test   %eax,%eax</span><br><span class="line">   0x0000000000400ef0 &lt;+16&gt;:    je     0x400ef7 &lt;phase_1+23&gt;</span><br><span class="line">   0x0000000000400ef2 &lt;+18&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000400ef7 &lt;+23&gt;:    add    $0x8,%rsp</span><br><span class="line">   0x0000000000400efb &lt;+27&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第2行，为函数分配栈帧</li>
+<li>第3行，设置函数<code>strings_not_equal</code>传入参数</li>
+<li>第4行，调用函数<code>strings_not_equal</code>，从字面意思理解，猜想如果传入字符串不同，则返回0</li>
+<li>第5、6行，函数<code>strings_not_equal</code>的返回值储存在<code>%eax</code>中，判断其是否为0，若为0，则跳至第8行，函数返回，炸弹拆除成功；若不为0，则跳至第7行</li>
+<li>第7行，调用<code>explode_bomb</code>函数，从字面意思理解，炸弹爆炸了。</li>
+</ul>
+<p>于是，只需利用<code>x/s</code>指令查看<code>0x402400</code>位置对应内存存的字符串即可：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220224170749197.png" alt="image-20220224170749197"></p>
+<p>这句话就是<code>phase_1</code>了</p>
+<h3 id="key"><a href="#key" class="headerlink" title="key"></a>key</h3><p><strong>Border relations with Canada have never been better.</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220224171003127.png" alt="image-20220224171003127"></p>
+<p>成功!</p>
+<h2 id="phase-2"><a href="#phase-2" class="headerlink" title="phase_2"></a>phase_2</h2><p>剩下部分的<code>phase</code>调用与<code>phase_1</code>都十分类似，直接反汇编即可</p>
+<h3 id="反汇编phase-2"><a href="#反汇编phase-2" class="headerlink" title="反汇编phase_2"></a>反汇编phase_2</h3><p>全部代码暂不放出，后面分析时再贴上，方便查看</p>
+<p>先看前几行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x0000000000400efc &lt;+0&gt;:     push   %rbp</span><br><span class="line">0x0000000000400efd &lt;+1&gt;:     push   %rbx</span><br><span class="line">0x0000000000400efe &lt;+2&gt;:     sub    $0x28,%rsp</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第1，2行，将<strong>被调用者保存寄存器</strong>的值入栈</li>
+<li>第3行，分配栈帧</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x0000000000400f02 &lt;+6&gt;:     mov    %rsp,%rsi</span><br><span class="line">0x0000000000400f05 &lt;+9&gt;:     callq  0x40145c &lt;read_six_numbers&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第5，6行，将栈顶指针<code>%rsp</code>传给<code>%rsi</code>，并作为参数调用函数<code>read_six_numbers</code>。从字面意思理解，本题是要我们输入6个数字。这里<code>mov    %rsp,%rsi</code>的目的是保存<code>caller</code>中栈顶的位置，方便在<code>read_six_numbers</code>中进行改值。我们不妨反汇编<code>read_six_numbers</code></li>
+</ul>
+<p>此时，栈的情况为：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220224200313575.png" alt="image-20220224200313575"></p>
+<h4 id="反汇编read-six-numbers"><a href="#反汇编read-six-numbers" class="headerlink" title="反汇编read_six_numbers"></a>反汇编read_six_numbers</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function read_six_numbers:</span><br><span class="line">   0x000000000040145c &lt;+0&gt;:     sub    $0x18,%rsp</span><br><span class="line">   0x0000000000401460 &lt;+4&gt;:     mov    %rsi,%rdx</span><br><span class="line">   0x0000000000401463 &lt;+7&gt;:     lea    0x4(%rsi),%rcx</span><br><span class="line">   0x0000000000401467 &lt;+11&gt;:    lea    0x14(%rsi),%rax</span><br><span class="line">   0x000000000040146b &lt;+15&gt;:    mov    %rax,0x8(%rsp)</span><br><span class="line">   0x0000000000401470 &lt;+20&gt;:    lea    0x10(%rsi),%rax</span><br><span class="line">   0x0000000000401474 &lt;+24&gt;:    mov    %rax,(%rsp)</span><br><span class="line">   0x0000000000401478 &lt;+28&gt;:    lea    0xc(%rsi),%r9</span><br><span class="line">   0x000000000040147c &lt;+32&gt;:    lea    0x8(%rsi),%r8</span><br><span class="line">   0x0000000000401480 &lt;+36&gt;:    mov    $0x4025c3,%esi</span><br><span class="line">   0x0000000000401485 &lt;+41&gt;:    mov    $0x0,%eax</span><br><span class="line">   0x000000000040148a &lt;+46&gt;:    callq  0x400bf0 &lt;__isoc99_sscanf@plt&gt;</span><br><span class="line">   0x000000000040148f &lt;+51&gt;:    cmp    $0x5,%eax</span><br><span class="line">   0x0000000000401492 &lt;+54&gt;:    jg     0x401499 &lt;read_six_numbers+61&gt;</span><br><span class="line">   0x0000000000401494 &lt;+56&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000401499 &lt;+61&gt;:    add    $0x18,%rsp</span><br><span class="line">   0x000000000040149d &lt;+65&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<p>截至第10行，寄存器及栈存储内容的指向如图所示：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220224215510737.png" alt="image-20220224215510737"></p>
+<p>在这个函数中，要做到传6个参数，用来存储6个输入的数字。很明显，这里传入了6个指针，其中4个存在寄存器上，另外2个存在栈上。由于<code>phase_2</code>函数中的栈指针<code>rsp</code>与这个函数中的<code>rsi</code>相等，所以把所有参数存在<code>rsi</code>之前的位置的目的是在返回<code>phase_2</code>函数后，能够直接利用<code>phase_2</code>函数的栈指针来连续地访问这6个数字。</p>
+<blockquote>
+<p>注意到<code>M[%rsp+0x4]</code>没有用来传参数，这是为什么呢？</p>
+<p>因为通过栈传递参数时，所有的数据大小都向8的倍数对齐。</p>
+</blockquote>
+<p>下面的问题就是如何确定这6个数字的先后位置，传递参数的寄存器使用顺序如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220224221138386.png" alt="image-20220224221138386"></p>
+<p>所以，我们应该输入的6个数字所在的位置就分别是：<code>R[%rsp]</code> <code>R[%rsp+0x8]</code> <code>%rsi</code>  <code>%rsi+0x4</code> <code>%rsi+0x8</code> <code>%rsi+0xc</code> </p>
+<p>返回<code>phase_2</code>函数后，利用栈顶指针调用就是： <code>%rsp</code>  <code>%rsp+0x4</code> <code>%rsp+0x8</code> <code>%rsp+0xc</code>  <code>%rsp+0x10</code> <code>%rsp+0x14</code></p>
+<h4 id="回到-phase-2"><a href="#回到-phase-2" class="headerlink" title="回到 phase_2"></a>回到 phase_2</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function phase_2:</span><br><span class="line">   0x0000000000400efc &lt;+0&gt;:     push   %rbp</span><br><span class="line">   0x0000000000400efd &lt;+1&gt;:     push   %rbx</span><br><span class="line">   0x0000000000400efe &lt;+2&gt;:     sub    $0x28,%rsp</span><br><span class="line">   0x0000000000400f02 &lt;+6&gt;:     mov    %rsp,%rsi</span><br><span class="line">   0x0000000000400f05 &lt;+9&gt;:     callq  0x40145c &lt;read_six_numbers&gt;</span><br><span class="line">   0x0000000000400f0a &lt;+14&gt;:    cmpl   $0x1,(%rsp)</span><br><span class="line">   0x0000000000400f0e &lt;+18&gt;:    je     0x400f30 &lt;phase_2+52&gt;</span><br><span class="line">   0x0000000000400f10 &lt;+20&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000400f15 &lt;+25&gt;:    jmp    0x400f30 &lt;phase_2+52&gt;</span><br><span class="line">   0x0000000000400f17 &lt;+27&gt;:    mov    -0x4(%rbx),%eax</span><br><span class="line">   0x0000000000400f1a &lt;+30&gt;:    add    %eax,%eax</span><br><span class="line">   0x0000000000400f1c &lt;+32&gt;:    cmp    %eax,(%rbx)</span><br><span class="line">   0x0000000000400f1e &lt;+34&gt;:    je     0x400f25 &lt;phase_2+41&gt;</span><br><span class="line">   0x0000000000400f20 &lt;+36&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000400f25 &lt;+41&gt;:    add    $0x4,%rbx</span><br><span class="line">   0x0000000000400f29 &lt;+45&gt;:    cmp    %rbp,%rbx</span><br><span class="line">   0x0000000000400f2c &lt;+48&gt;:    jne    0x400f17 &lt;phase_2+27&gt;</span><br><span class="line">   0x0000000000400f2e &lt;+50&gt;:    jmp    0x400f3c &lt;phase_2+64&gt;</span><br><span class="line">   0x0000000000400f30 &lt;+52&gt;:    lea    0x4(%rsp),%rbx</span><br><span class="line">   0x0000000000400f35 &lt;+57&gt;:    lea    0x18(%rsp),%rbp</span><br><span class="line">   0x0000000000400f3a &lt;+62&gt;:    jmp    0x400f17 &lt;phase_2+27&gt;</span><br><span class="line">   0x0000000000400f3c &lt;+64&gt;:    add    $0x28,%rsp</span><br><span class="line">   0x0000000000400f40 &lt;+68&gt;:    pop    %rbx</span><br><span class="line">   0x0000000000400f41 &lt;+69&gt;:    pop    %rbp</span><br><span class="line">   0x0000000000400f42 &lt;+70&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第7，8，9行，比较<code>(%rsp)</code>与1是否相等，不相等则引爆。可知第一个数为 1</li>
+<li>看第20行，第2个数存在<code>0x(%rsp)</code>中，设为<code>num_2</code>，则<code>(%rbx)=num_2</code>。跳到第11行，这一行将第一个数赋值给<code>%eax</code>，12，13行是将其翻倍再进行同样的比较。可知第二个数为2</li>
+<li>跳到第16行，得到了第三个数的地址，第17行把我迷惑了很久，<code>rbp</code>和<code>rbx</code>肯定是不相等的，不知道这样设置的意义。继续跳到第17行，进入循环。</li>
+<li>这里循环的规律是，每个数都要与上一个数的2倍相等，从而可以得到剩下的4个数分别为：4，8，16，32</li>
+</ul>
+<h3 id="key-1"><a href="#key-1" class="headerlink" title="key"></a>key</h3><p><strong>1 2 4 8 16 32</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220224234129047.png" alt="image-20220224234129047"></p>
+<p>成功！</p>
+<h2 id="phase-3"><a href="#phase-3" class="headerlink" title="phase_3"></a>phase_3</h2><h3 id="反汇编-phase-3"><a href="#反汇编-phase-3" class="headerlink" title="反汇编 phase_3"></a>反汇编 phase_3</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function phase_3:</span><br><span class="line">   0x0000000000400f43 &lt;+0&gt;:     sub    $0x18,%rsp</span><br><span class="line">   0x0000000000400f47 &lt;+4&gt;:     lea    0xc(%rsp),%rcx</span><br><span class="line">   0x0000000000400f4c &lt;+9&gt;:     lea    0x8(%rsp),%rdx</span><br><span class="line">   0x0000000000400f51 &lt;+14&gt;:    mov    $0x4025cf,%esi</span><br><span class="line">   0x0000000000400f56 &lt;+19&gt;:    mov    $0x0,%eax</span><br><span class="line">   0x0000000000400f5b &lt;+24&gt;:    callq  0x400bf0 &lt;__isoc99_sscanf@plt&gt;</span><br><span class="line">   0x0000000000400f60 &lt;+29&gt;:    cmp    $0x1,%eax</span><br><span class="line">   0x0000000000400f63 &lt;+32&gt;:    jg     0x400f6a &lt;phase_3+39&gt;</span><br><span class="line">   0x0000000000400f65 &lt;+34&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000400f6a &lt;+39&gt;:    cmpl   $0x7,0x8(%rsp)</span><br><span class="line">   0x0000000000400f6f &lt;+44&gt;:    ja     0x400fad &lt;phase_3+106&gt;</span><br><span class="line">   0x0000000000400f71 &lt;+46&gt;:    mov    0x8(%rsp),%eax</span><br><span class="line">   0x0000000000400f75 &lt;+50&gt;:    jmpq   *0x402470(,%rax,8)</span><br><span class="line">   0x0000000000400f7c &lt;+57&gt;:    mov    $0xcf,%eax</span><br><span class="line">   0x0000000000400f81 &lt;+62&gt;:    jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400f83 &lt;+64&gt;:    mov    $0x2c3,%eax</span><br><span class="line">   0x0000000000400f88 &lt;+69&gt;:    jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400f8a &lt;+71&gt;:    mov    $0x100,%eax</span><br><span class="line">   0x0000000000400f8f &lt;+76&gt;:    jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400f91 &lt;+78&gt;:    mov    $0x185,%eax</span><br><span class="line">   0x0000000000400f96 &lt;+83&gt;:    jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400f98 &lt;+85&gt;:    mov    $0xce,%eax</span><br><span class="line">   0x0000000000400f9d &lt;+90&gt;:    jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400f9f &lt;+92&gt;:    mov    $0x2aa,%eax</span><br><span class="line">   0x0000000000400fa4 &lt;+97&gt;:    jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400fa6 &lt;+99&gt;:    mov    $0x147,%eax</span><br><span class="line">   0x0000000000400fab &lt;+104&gt;:   jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400fad &lt;+106&gt;:   callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000400fb2 &lt;+111&gt;:   mov    $0x0,%eax</span><br><span class="line">   0x0000000000400fb7 &lt;+116&gt;:   jmp    0x400fbe &lt;phase_3+123&gt;</span><br><span class="line">   0x0000000000400fb9 &lt;+118&gt;:   mov    $0x137,%eax</span><br><span class="line">   0x0000000000400fbe &lt;+123&gt;:   cmp    0xc(%rsp),%eax</span><br><span class="line">   0x0000000000400fc2 &lt;+127&gt;:   je     0x400fc9 &lt;phase_3+134&gt;</span><br><span class="line">   0x0000000000400fc4 &lt;+129&gt;:   callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000400fc9 &lt;+134&gt;:   add    $0x18,%rsp</span><br><span class="line">   0x0000000000400fcd &lt;+138&gt;:   retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<p>这道题与上道题非常类似。</p>
+<ul>
+<li>首先看第5行，查看<code>0x4025cf</code>位置的内容。可以知道，要求传入2个数字</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220225143138464.png" alt="image-20220225143138464"></p>
+<ul>
+<li>由上道题的启法，第2，3，4行就指明了两个数字的位置分别在栈空间<code>%rsp+0x8</code>和<code>%rsp+0xc</code>。</li>
+<li>第8，9，10行属于程序健壮性的考虑，判断是否输入了两个数字，否则直接引爆</li>
+<li>第11，12行，说明了第一个数字应该小于等于7</li>
+<li>第14行，要求跳到内存<code>0x402470(,%rax,8)</code>里面存的位置。<code>rax</code>指向的内存此时存的就是第1个数，我们只知道这个数时小于等于7的，这里随便假设其为 1 试试！那么接下来就要跳到内存<code>0x402478</code>中的地址</li>
+<li>查看内存<code>0x402478</code>中的内容：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220225144723573.png" alt="image-20220225144723573"></p>
+<ul>
+<li>所以，下面就跳到<code>0x0000000000400fb9</code>对应代码，也就是第32行，结合第33行知，第二个数字为$7+3\times 16+1\times 16^2&#x3D;311$，于是得到<strong>key</strong>: 1 311</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220225145341466.png" alt="image-20220225145341466"></p>
+<p>发现成功了！</p>
+<ul>
+<li>再试试设第1个数为2，则接下来跳转到<code>0x0000000000400f83</code>，即第17行，则第2个数为707。于是得到<strong>key</strong>: 2 707, 同样成功了！</li>
+</ul>
+<h3 id="key-2"><a href="#key-2" class="headerlink" title="key"></a>key</h3><p><code>phase_3</code>的含金量远远不如不如<code>phase_2</code>，可能是为了让我们在拆弹中途轻松一下。</p>
+<p>这道题的亮点在于其开放性，第一个数可以取0到7中的任意一个，根据第一个数的情况来确定第二个数，所以最后能够通过的答案有8组，不一一列举了。</p>
+<h2 id="phase-4"><a href="#phase-4" class="headerlink" title="phase_4"></a>phase_4</h2><h3 id="反汇编-phase-4"><a href="#反汇编-phase-4" class="headerlink" title="反汇编 phase_4"></a>反汇编 phase_4</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function phase_4:</span><br><span class="line">   0x000000000040100c &lt;+0&gt;:     sub    $0x18,%rsp</span><br><span class="line">   0x0000000000401010 &lt;+4&gt;:     lea    0xc(%rsp),%rcx</span><br><span class="line">   0x0000000000401015 &lt;+9&gt;:     lea    0x8(%rsp),%rdx</span><br><span class="line">   0x000000000040101a &lt;+14&gt;:    mov    $0x4025cf,%esi</span><br><span class="line">   0x000000000040101f &lt;+19&gt;:    mov    $0x0,%eax</span><br><span class="line">   0x0000000000401024 &lt;+24&gt;:    callq  0x400bf0 &lt;__isoc99_sscanf@plt&gt;</span><br><span class="line">   0x0000000000401029 &lt;+29&gt;:    cmp    $0x2,%eax</span><br><span class="line">   0x000000000040102c &lt;+32&gt;:    jne    0x401035 &lt;phase_4+41&gt;</span><br><span class="line">   0x000000000040102e &lt;+34&gt;:    cmpl   $0xe,0x8(%rsp)</span><br><span class="line">   0x0000000000401033 &lt;+39&gt;:    jbe    0x40103a &lt;phase_4+46&gt;</span><br><span class="line">   0x0000000000401035 &lt;+41&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x000000000040103a &lt;+46&gt;:    mov    $0xe,%edx</span><br><span class="line">   0x000000000040103f &lt;+51&gt;:    mov    $0x0,%esi</span><br><span class="line">   0x0000000000401044 &lt;+56&gt;:    mov    0x8(%rsp),%edi</span><br><span class="line">   0x0000000000401048 &lt;+60&gt;:    callq  0x400fce &lt;func4&gt;</span><br><span class="line">   0x000000000040104d &lt;+65&gt;:    test   %eax,%eax</span><br><span class="line">   0x000000000040104f &lt;+67&gt;:    jne    0x401058 &lt;phase_4+76&gt;</span><br><span class="line">   0x0000000000401051 &lt;+69&gt;:    cmpl   $0x0,0xc(%rsp)</span><br><span class="line">   0x0000000000401056 &lt;+74&gt;:    je     0x40105d &lt;phase_4+81&gt;</span><br><span class="line">   0x0000000000401058 &lt;+76&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x000000000040105d &lt;+81&gt;:    add    $0x18,%rsp</span><br><span class="line">   0x0000000000401061 &lt;+85&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这道题代码风格与前两题也非常相似，查看第5行知，依旧是读入两个数字，设第一个数字为<code>num1</code>，第二个数字为<code>num2</code>。其中<code>num1</code>存在<code>(%rsp+0x8)</code>中，<code>num2</code>存在<code>(%rsp+0xc)</code>中。</li>
+<li>第10，11行，若$num1 \leq 14$，则继续，否则爆炸</li>
+<li>第13，14，15，16行，分别设置参数<code>(%edx) = 0xe</code>，<code>(%esi) = 0x0</code>，<code>(%edi) = num1</code>之后调用函数<code>func4</code></li>
+<li>第17行，要看到调用完<code>func4</code>函数后，<code>func4</code>的返回值存在<code>%eax</code>中，只有<code>(%eax)=0</code>也就是<code>func4</code>的返回值为0，才能拆除炸弹。</li>
+<li>第19行，只有<code>(%rsp+0xc)=0</code>才能拆除炸弹，因此<code>num2 = 0</code></li>
+</ul>
+<h4 id="反汇编func4"><a href="#反汇编func4" class="headerlink" title="反汇编func4"></a>反汇编func4</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function func4:</span><br><span class="line">   0x0000000000400fce &lt;+0&gt;:     sub    $0x8,%rsp</span><br><span class="line">   0x0000000000400fd2 &lt;+4&gt;:     mov    %edx,%eax</span><br><span class="line">   0x0000000000400fd4 &lt;+6&gt;:     sub    %esi,%eax</span><br><span class="line">   0x0000000000400fd6 &lt;+8&gt;:     mov    %eax,%ecx</span><br><span class="line">   0x0000000000400fd8 &lt;+10&gt;:    shr    $0x1f,%ecx</span><br><span class="line">   0x0000000000400fdb &lt;+13&gt;:    add    %ecx,%eax</span><br><span class="line">   0x0000000000400fdd &lt;+15&gt;:    sar    %eax</span><br><span class="line">   0x0000000000400fdf &lt;+17&gt;:    lea    (%rax,%rsi,1),%ecx</span><br><span class="line">   0x0000000000400fe2 &lt;+20&gt;:    cmp    %edi,%ecx</span><br><span class="line">   0x0000000000400fe4 &lt;+22&gt;:    jle    0x400ff2 &lt;func4+36&gt;</span><br><span class="line">   0x0000000000400fe6 &lt;+24&gt;:    lea    -0x1(%rcx),%edx</span><br><span class="line">   0x0000000000400fe9 &lt;+27&gt;:    callq  0x400fce &lt;func4&gt;</span><br><span class="line">   0x0000000000400fee &lt;+32&gt;:    add    %eax,%eax</span><br><span class="line">   0x0000000000400ff0 &lt;+34&gt;:    jmp    0x401007 &lt;func4+57&gt;</span><br><span class="line">   0x0000000000400ff2 &lt;+36&gt;:    mov    $0x0,%eax</span><br><span class="line">   0x0000000000400ff7 &lt;+41&gt;:    cmp    %edi,%ecx</span><br><span class="line">   0x0000000000400ff9 &lt;+43&gt;:    jge    0x401007 &lt;func4+57&gt;</span><br><span class="line">   0x0000000000400ffb &lt;+45&gt;:    lea    0x1(%rcx),%esi</span><br><span class="line">   0x0000000000400ffe &lt;+48&gt;:    callq  0x400fce &lt;func4&gt;</span><br><span class="line">   0x0000000000401003 &lt;+53&gt;:    lea    0x1(%rax,%rax,1),%eax</span><br><span class="line">   0x0000000000401007 &lt;+57&gt;:    add    $0x8,%rsp</span><br><span class="line">   0x000000000040100b &lt;+61&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<p>这是一个递归调用的函数，我们写出它的C语言代码：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">func4</span> <span class="params">( <span class="type">int</span> edi, <span class="type">int</span> esi, <span class="type">int</span> edx )</span><span class="comment">//初始值:edi=num1,esi=0x0,edx=0xe</span></span><br><span class="line">&#123;<span class="comment">// 返回值为eax</span></span><br><span class="line">	eax = edx - esi;  <span class="comment">//3、4行</span></span><br><span class="line">    eax = (eax + (eax &gt;&gt; <span class="number">31</span>)) &gt;&gt; <span class="number">1</span>;  <span class="comment">//5-8行</span></span><br><span class="line">    ecx = eax + exi;  <span class="comment">//9行</span></span><br><span class="line">	<span class="keyword">if</span>(edi &lt; ecx) </span><br><span class="line">		<span class="keyword">return</span> 	<span class="number">2</span> * func4(edi, esi, edx - <span class="number">1</span>); <span class="comment">//14行</span></span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (edi &gt; ecx)</span><br><span class="line">		<span class="keyword">return</span> 	<span class="number">2</span> * func4(edi, esi + <span class="number">1</span>, edx) + <span class="number">1</span>; <span class="comment">//21行</span></span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		<span class="keyword">return</span>	<span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>根据3，4，5行，容易求得<code>eax=0x7</code>，要进入返回0的分区，则<code>edi=eax=0x7</code>，所以<code>num1=7</code></p>
+<h3 id="key-3"><a href="#key-3" class="headerlink" title="key"></a>key</h3><p>7 0</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220225230440595.png" alt="image-20220225230440595"></p>
+<p>成功！</p>
+<h2 id="phase-5"><a href="#phase-5" class="headerlink" title="phase_5"></a>phase_5</h2><h3 id="反汇编phase-5"><a href="#反汇编phase-5" class="headerlink" title="反汇编phase_5"></a>反汇编phase_5</h3><p>这里不将全部代码放出，我们分块分析</p>
+<h4 id="Part-1"><a href="#Part-1" class="headerlink" title="Part 1"></a>Part 1</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x0000000000401062 &lt;+0&gt;:     push   %rbx</span><br><span class="line">0x0000000000401063 &lt;+1&gt;:     sub    $0x20,%rsp</span><br><span class="line">0x0000000000401067 &lt;+5&gt;:     mov    %rdi,%rbx</span><br><span class="line">0x000000000040106a &lt;+8&gt;:     mov    %fs:0x28,%rax</span><br><span class="line">0x0000000000401073 &lt;+17&gt;:    mov    %rax,0x18(%rsp)</span><br><span class="line">0x0000000000401078 &lt;+22&gt;:    xor    %eax,%eax</span><br><span class="line">0x000000000040107a &lt;+24&gt;:    callq  0x40131b &lt;string_length&gt;</span><br><span class="line">0x000000000040107f &lt;+29&gt;:    cmp    $0x6,%eax</span><br><span class="line">0x0000000000401082 &lt;+32&gt;:    je     0x4010d2 &lt;phase_5+112&gt;</span><br><span class="line">0x0000000000401084 &lt;+34&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第3行，<code>%rdi</code>是用来传递参数的第一个寄存器，猜测此时我们输入的字符串就存在<code>(%rdi)</code>中，该行将其值赋给了<code>%rbx</code></li>
+<li>第4，5行，把<code>fs</code>段偏移<code>0x28</code>的一个数据储存到<code>%rsp+0x18</code>处，这是为了防止缓存区溢出。</li>
+<li>第6行，自己与自己异或，清零。</li>
+<li>第7-10行，比较我们输入的字符串长度是否为6，否则爆炸。说明此题要求输入一个长度为6的字符串。接下来跳到<code>0x4010d2</code>处的代码</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x00000000004010d2 &lt;+112&gt;:   mov    $0x0,%eax</span><br><span class="line">0x00000000004010d7 &lt;+117&gt;:   jmp    0x40108b &lt;phase_5+41&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>清空<code>(%eax)</code>后跳至<code>d7</code>处，接下来作为<code>part2</code>部分讲解</li>
+</ul>
+<h4 id="Part-2"><a href="#Part-2" class="headerlink" title="Part 2"></a>Part 2</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x000000000040108b &lt;+41&gt;:    movzbl (%rbx,%rax,1),%ecx</span><br><span class="line">0x000000000040108f &lt;+45&gt;:    mov    %cl,(%rsp)</span><br><span class="line">0x0000000000401092 &lt;+48&gt;:    mov    (%rsp),%rdx</span><br><span class="line">0x0000000000401096 &lt;+52&gt;:    and    $0xf,%edx</span><br><span class="line">0x0000000000401099 &lt;+55&gt;:    movzbl 0x4024b0(%rdx),%edx</span><br><span class="line">0x00000000004010a0 &lt;+62&gt;:    mov    %dl,0x10(%rsp,%rax,1)</span><br><span class="line">0x00000000004010a4 &lt;+66&gt;:    add    $0x1,%rax</span><br><span class="line">0x00000000004010a8 &lt;+70&gt;:    cmp    $0x6,%rax</span><br><span class="line">0x00000000004010ac &lt;+74&gt;:    jne    0x40108b &lt;phase_5+41&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码是一个循环</p>
+<ul>
+<li><code>(%eax)</code>在跳转前已经被清空了，从第7，8两行可以看出，<code>(%rax)</code>是计数变量，在每次循环后+1，直到等于6时跳出循环。</li>
+<li>先看第一轮循环。第1行，<code>%rbx</code>中存放着我们输入的字符串的地址，此时<code>(%rax)=0x0</code>，因此<code>%ecx</code>就存放着字符串的第一个字符，设六个字符分别为<code>ch[0]</code>,<code>ch[1]</code>,<code>ch[2]</code>,<code>ch[3]</code>,<code>ch[4]</code>,<code>ch[5]</code>，则每轮循环到这里，<code>(%ecx)=ch[(%rax)]</code></li>
+<li>第3-4行，<code>%cl</code>是<code>%ecx</code>的低八位，一直到第4行，与操作的目的就是只取<code>(%ecx)</code>的最低四位</li>
+<li>第5行，这里给了一个内存地址，我们先查看一下：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220226150753736.png" alt="image-20220226150753736"></p>
+<p>得到字符串：</p>
+<p><code>maduiersnfotvbylSo you think you can stop the bomb with ctrl-c, do you?</code></p>
+<ul>
+<li><p>第5行是将<code>%edx</code>的值修改为<code>0x4024b0(%rdx)</code>位置的字符。换句话说，<code>(%rdx)</code>在这里起到了索引的作用，比如<code>(%rdx)=0x1</code>，就是将<code>a</code>字符传给<code>%edx</code></p>
+</li>
+<li><p>后面是将上一句的得到的字符传入栈中保存，<code>(%rax)</code>同样作为栈的索引，第一个字符就储存在<code>(%rsp+0x10)</code></p>
+</li>
+</ul>
+<p>我尝试写出这段循环的伪代码：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="built_in">string</span> s = <span class="string">&quot;maduiersnfotvbyl&quot;</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> rax = <span class="number">0</span>; rax &lt; <span class="number">6</span>; rax++)</span><br><span class="line">&#123;</span><br><span class="line">	ecx = ch[rax];     <span class="comment">//取输入字符串的第rax个字符</span></span><br><span class="line">    edx = ecx &amp; <span class="number">0xf</span>;   <span class="comment">//取第rax个字符ASCII码的最低四位</span></span><br><span class="line">    edx = s[edx];	   <span class="comment">//取给定内存中字符串的第edx个字符</span></span><br><span class="line">	rsp[<span class="number">16</span>+rax] = edx; <span class="comment">//edx -&gt; 栈</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>退出循环时，栈上从<code>(%rsp+0x10)</code>开始按顺序存储着6个索引到的字符</p>
+</li>
+<li><p>循环结束后的代码作为<code>Part 3</code>讲解</p>
+</li>
+</ul>
+<h4 id="Part-3"><a href="#Part-3" class="headerlink" title="Part 3"></a>Part 3</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x00000000004010ae &lt;+76&gt;:    movb   $0x0,0x16(%rsp)</span><br><span class="line">0x00000000004010b3 &lt;+81&gt;:    mov    $0x40245e,%esi</span><br><span class="line">0x00000000004010b8 &lt;+86&gt;:    lea    0x10(%rsp),%rdi</span><br><span class="line">0x00000000004010bd &lt;+91&gt;:    callq  0x401338 &lt;strings_not_equal&gt;</span><br><span class="line">0x00000000004010c2 &lt;+96&gt;:    test   %eax,%eax</span><br><span class="line">0x00000000004010c4 &lt;+98&gt;:    je     0x4010d9 &lt;phase_5+119&gt;</span><br><span class="line">0x00000000004010c6 &lt;+100&gt;:   callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">0x00000000004010cb &lt;+105&gt;:   nopl   0x0(%rax,%rax,1)</span><br><span class="line">0x00000000004010d0 &lt;+110&gt;:   jmp    0x4010d9 &lt;phase_5+119&gt;</span><br><span class="line">0x00000000004010d2 &lt;+112&gt;:   mov    $0x0,%eax</span><br><span class="line">0x00000000004010d7 &lt;+117&gt;:   jmp    0x40108b &lt;phase_5+41&gt;</span><br><span class="line">0x00000000004010d9 &lt;+119&gt;:   mov    0x18(%rsp),%rax</span><br><span class="line">0x00000000004010de &lt;+124&gt;:   xor    %fs:0x28,%rax</span><br><span class="line">0x00000000004010e7 &lt;+133&gt;:   je     0x4010ee &lt;phase_5+140&gt;</span><br><span class="line">0x00000000004010e9 &lt;+135&gt;:   callq  0x400b30 &lt;__stack_chk_fail@plt&gt;</span><br><span class="line">0x00000000004010ee &lt;+140&gt;:   add    $0x20,%rsp</span><br><span class="line">0x00000000004010f2 &lt;+144&gt;:   pop    %rbx</span><br><span class="line">0x00000000004010f3 &lt;+145&gt;:   retq</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第2行，查看<code>0x40245e</code>位置内存的内容</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220226155413396.png" alt="image-20220226155413396"></p>
+<ul>
+<li>接下来就是调用<code>strings_not_equal</code>函数，判断栈上的六个字符与这6个字符是否相等。操作与<code>phase_1</code>相同。</li>
+<li>做到这里，离胜利只差一步之遥。</li>
+</ul>
+<h3 id="key-4"><a href="#key-4" class="headerlink" title="key"></a>key</h3><p><strong>先捋一捋思路：</strong>由<code>part3</code>可知，最后返回的字符应该是<code>flyers</code>。而这6个字符是怎么得来的呢？由<code>part2</code>，是通过取我们输入六个字符的<code>ASCII</code>码的低四位作为索引值，查找<code>maduiersnfotvbyl</code>里的字符组成的。</p>
+<p><code>maduiersnfotvbyl</code>中<code>f</code>为第9位，<code>l</code>为第15位，<code>y</code>第14位，<code>e</code>第5位，<code>r</code>第6位，<code>s</code>第7位</p>
+<p>也就是说，我们需要输入6个字符，使它们<code>ASCII</code>码低四位分别是：<code>1001</code>, <code>1111</code>, <code>1110</code>, <code>0101</code>, <code>0110</code>, <code>0111</code></p>
+<p>由<code>a</code>的<code>ASCII</code>码为<code>01100001</code>，即可定位到6个字符分别为：ionuvw</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220226160813025.png" alt="image-20220226160813025"></p>
+<p>成功！</p>
+<p>由于只限制了<code>ASCII</code>的低4位，所以本题的答案也不止一个，不再一一列举了。</p>
+<h2 id="phase-6"><a href="#phase-6" class="headerlink" title="phase_6"></a>phase_6</h2><h3 id="反汇编phase-6"><a href="#反汇编phase-6" class="headerlink" title="反汇编phase_6"></a>反汇编phase_6</h3><p><code>phase_6</code>的代码非常长，这里将代码分成6块分别分析</p>
+<h4 id="Part-1-1"><a href="#Part-1-1" class="headerlink" title="Part 1"></a>Part 1</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x00000000004010f4 &lt;+0&gt;:     push   %r14</span><br><span class="line">0x00000000004010f6 &lt;+2&gt;:     push   %r13</span><br><span class="line">0x00000000004010f8 &lt;+4&gt;:     push   %r12</span><br><span class="line">0x00000000004010fa &lt;+6&gt;:     push   %rbp</span><br><span class="line">0x00000000004010fb &lt;+7&gt;:     push   %rbx</span><br><span class="line">0x00000000004010fc &lt;+8&gt;:     sub    $0x50,%rsp</span><br><span class="line">0x0000000000401100 &lt;+12&gt;:    mov    %rsp,%r13</span><br><span class="line">0x0000000000401103 &lt;+15&gt;:    mov    %rsp,%rsi</span><br><span class="line">0x0000000000401106 &lt;+18&gt;:    callq  0x40145c &lt;read_six_numbers&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>前几行是保存参数，分配栈帧</li>
+<li>看到<code>read_six_numbers</code>，有没有很眼熟的感觉？我们在<code>phase_2</code>中已经详细分析并画了图。这个函数调用的结果是调用者的栈上按顺序存储输入的6个数</li>
+</ul>
+<p>返回后，栈及指针情况为：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220226221332910.png" alt="image-20220226221332910"></p>
+<h4 id="Part-2-1"><a href="#Part-2-1" class="headerlink" title="Part 2"></a>Part 2</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x000000000040110b &lt;+23&gt;:    mov    %rsp,%r14</span><br><span class="line">0x000000000040110e &lt;+26&gt;:    mov    $0x0,%r12d</span><br><span class="line">0x0000000000401114 &lt;+32&gt;:    mov    %r13,%rbp</span><br><span class="line">0x0000000000401117 &lt;+35&gt;:    mov    0x0(%r13),%eax</span><br><span class="line">0x000000000040111b &lt;+39&gt;:    sub    $0x1,%eax</span><br><span class="line">0x000000000040111e &lt;+42&gt;:    cmp    $0x5,%eax</span><br><span class="line">0x0000000000401121 &lt;+45&gt;:    jbe    0x401128 &lt;phase_6+52&gt;</span><br><span class="line">0x0000000000401123 &lt;+47&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">0x0000000000401128 &lt;+52&gt;:    add    $0x1,%r12d</span><br><span class="line">0x000000000040112c &lt;+56&gt;:    cmp    $0x6,%r12d</span><br><span class="line">0x0000000000401130 &lt;+60&gt;:    je     0x401153 &lt;phase_6+95&gt;</span><br><span class="line">0x0000000000401132 &lt;+62&gt;:    mov    %r12d,%ebx</span><br><span class="line">0x0000000000401135 &lt;+65&gt;:    movslq %ebx,%rax</span><br><span class="line">0x0000000000401138 &lt;+68&gt;:    mov    (%rsp,%rax,4),%eax</span><br><span class="line">0x000000000040113b &lt;+71&gt;:    cmp    %eax,0x0(%rbp)</span><br><span class="line">0x000000000040113e &lt;+74&gt;:    jne    0x401145 &lt;phase_6+81&gt;</span><br><span class="line">0x0000000000401140 &lt;+76&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">0x0000000000401145 &lt;+81&gt;:    add    $0x1,%ebx</span><br><span class="line">0x0000000000401148 &lt;+84&gt;:    cmp    $0x5,%ebx</span><br><span class="line">0x000000000040114b &lt;+87&gt;:    jle    0x401135 &lt;phase_6+65&gt;</span><br><span class="line">0x000000000040114d &lt;+89&gt;:    add    $0x4,%r13</span><br><span class="line">0x0000000000401151 &lt;+93&gt;:    jmp    0x401114 &lt;phase_6+32&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第5，6，7行，<code>(%eax)=num[0]</code>，由$num[0]-1\le 5$ 知<code>num[0]</code>不大于6</li>
+<li>先看21，22行，意识到这里有一个大循环，每次将<code>(%r13)</code>加4，之后回到第3行，<code>(%r13)</code>赋给了<code>(%eax)</code>，这时，<code>(%eax)=num[1]</code>；再有后面的判断知，对任意<code>i</code>，都有<code>num[i]</code>不大于6</li>
+<li>9，10，11，12行给出了退出大循环的条件，就是6个数字全部遍历到</li>
+<li>注意18，19，20行，这里又有一个循环，是为了判断数组元素是否相等</li>
+</ul>
+<p>写出<code>Part 2</code>的C语言代码如下</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//为了简化代码，将指针转化为数组索引</span></span><br><span class="line">r14 = <span class="number">0</span>;</span><br><span class="line">r13 = <span class="number">0</span>;</span><br><span class="line">r12d = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>)&#123;			<span class="comment">//第3行</span></span><br><span class="line">	rbp = r13;</span><br><span class="line">	<span class="keyword">if</span>(num[r13] - <span class="number">1</span> &gt; <span class="number">5</span>)	<span class="comment">//第4,5,6行</span></span><br><span class="line">		<span class="keyword">goto</span> bomb;</span><br><span class="line">	r12d++;			</span><br><span class="line">	<span class="keyword">if</span>(r12d == <span class="number">6</span>)	<span class="comment">//第10行</span></span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">for</span>(ebx = r12d; ebx &lt;= <span class="number">5</span>; ebx++)&#123;	<span class="comment">//第14行</span></span><br><span class="line">		<span class="keyword">if</span>(num[ebx] == num[rbp])		<span class="comment">//第13,14,15行</span></span><br><span class="line">			<span class="keyword">goto</span> bomb;</span><br><span class="line">	&#125;</span><br><span class="line">	r13++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>可见，这部分代码给输入数字提了两个要求：<ul>
+<li>每个数字不大于6</li>
+<li>数字互不相同</li>
+</ul>
+</li>
+</ul>
+<h4 id="Part-3-1"><a href="#Part-3-1" class="headerlink" title="Part 3"></a>Part 3</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x0000000000401153 &lt;+95&gt;:    lea    0x18(%rsp),%rsi</span><br><span class="line">0x0000000000401158 &lt;+100&gt;:   mov    %r14,%rax</span><br><span class="line">0x000000000040115b &lt;+103&gt;:   mov    $0x7,%ecx</span><br><span class="line">0x0000000000401160 &lt;+108&gt;:   mov    %ecx,%edx</span><br><span class="line">0x0000000000401162 &lt;+110&gt;:   sub    (%rax),%edx</span><br><span class="line">0x0000000000401164 &lt;+112&gt;:   mov    %edx,(%rax)</span><br><span class="line">0x0000000000401166 &lt;+114&gt;:   add    $0x4,%rax</span><br><span class="line">0x000000000040116a &lt;+118&gt;:   cmp    %rsi,%rax</span><br><span class="line">0x000000000040116d &lt;+121&gt;:   jne    0x401160 &lt;phase_6+108&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这又是一段循环，但是比<code>Part 2</code>简单得多。话不多说，直接写出C语言代码</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">rsi = <span class="number">7</span>;</span><br><span class="line"><span class="keyword">for</span>(rax = <span class="number">0</span>; rax != rsi; rax++)</span><br><span class="line">&#123;</span><br><span class="line">	num[rax] = <span class="number">7</span> - num[rax];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也就是对输入的数字进行了一波简单变换。为了方便描述，假设变换后的数字为<code>n[i]</code>。易知，<code>n[0]</code>-<code>n[5]</code>是数字1-6的一个组合。</p>
+<h4 id="Part-4"><a href="#Part-4" class="headerlink" title="Part 4"></a>Part 4</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x000000000040116f &lt;+123&gt;:   mov    $0x0,%esi</span><br><span class="line">0x0000000000401174 &lt;+128&gt;:   jmp    0x401197 &lt;phase_6+163&gt;</span><br><span class="line">0x0000000000401176 &lt;+130&gt;:   mov    0x8(%rdx),%rdx</span><br><span class="line">0x000000000040117a &lt;+134&gt;:   add    $0x1,%eax</span><br><span class="line">0x000000000040117d &lt;+137&gt;:   cmp    %ecx,%eax</span><br><span class="line">0x000000000040117f &lt;+139&gt;:   jne    0x401176 &lt;phase_6+130&gt;</span><br><span class="line">0x0000000000401181 &lt;+141&gt;:   jmp    0x401188 &lt;phase_6+148&gt;</span><br><span class="line">0x0000000000401183 &lt;+143&gt;:   mov    $0x6032d0,%edx</span><br><span class="line">0x0000000000401188 &lt;+148&gt;:   mov    %rdx,0x20(%rsp,%rsi,2)</span><br><span class="line">0x000000000040118d &lt;+153&gt;:   add    $0x4,%rsi</span><br><span class="line">0x0000000000401191 &lt;+157&gt;:   cmp    $0x18,%rsi</span><br><span class="line">0x0000000000401195 &lt;+161&gt;:   je     0x4011ab &lt;phase_6+183&gt;</span><br><span class="line">0x0000000000401197 &lt;+163&gt;:   mov    (%rsp,%rsi,1),%ecx</span><br><span class="line">0x000000000040119a &lt;+166&gt;:   cmp    $0x1,%ecx</span><br><span class="line">0x000000000040119d &lt;+169&gt;:   jle    0x401183 &lt;phase_6+143&gt;</span><br><span class="line">0x000000000040119f &lt;+171&gt;:   mov    $0x1,%eax</span><br><span class="line">0x00000000004011a4 &lt;+176&gt;:   mov    $0x6032d0,%edx</span><br><span class="line">0x00000000004011a9 &lt;+181&gt;:   jmp    0x401176 &lt;phase_6+130&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第13行，<code>%ecx=n[0]</code>，接着判断其与1大小关系，由于<code>n[0]</code>不小于1，所以这步判断相当于：若<code>n[0]</code>等于1，跳到第8行</li>
+<li>第8行这里，给了一个地址，我们查看一下：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227102414019.png" alt="image-20220227102414019"></p>
+<p>这实际上是一个链表，每个结点的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">node</span>&#123;</span></span><br><span class="line">    <span class="type">int</span> val;</span><br><span class="line">    <span class="type">int</span> number;</span><br><span class="line">    node* next;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// node[1]-&gt;next = node[2],...以此类推</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>第9行，此时<code>(%rdx)</code>指向的就是第一个节点，把它放到<code>(%rsp+0x20)</code>的位置</p>
+</li>
+<li><p>返回上一步，如果<code>n[0]</code>不等于1，在3-6行有一个循环。我们写出它的C语言代码</p>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//ecx = n[i]</span></span><br><span class="line">*rdx = node[<span class="number">1</span>];	<span class="comment">//17行</span></span><br><span class="line"><span class="keyword">for</span>(eax = <span class="number">1</span>; eax != ecx; eax ++)&#123;</span><br><span class="line">    rdx = rdx -&gt; next;	<span class="comment">//第3行</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>可见这一步的目的是移动指针，找到对应的结点，移动多少位呢？显然是移动<code>n[i]-1</code>位，换句话说，这一步找到<code>node[n[i]]</code>位置的结点</p>
+</li>
+<li><p>第8行，将结点压栈，继续循环，对另外5个数字进行同样操作。到了这里我们就可以理解<code>Part 4</code>的操作了，它是通过我们输入的六个数字分别作为索引对链表进行重排。</p>
+</li>
+</ul>
+<p>该步完成后，栈的情况如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227131921175.png" alt="image-20220227131921175"></p>
+<h4 id="Part-5"><a href="#Part-5" class="headerlink" title="Part 5"></a>Part 5</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x00000000004011ab &lt;+183&gt;:   mov    0x20(%rsp),%rbx</span><br><span class="line">0x00000000004011b0 &lt;+188&gt;:   lea    0x28(%rsp),%rax</span><br><span class="line">0x00000000004011b5 &lt;+193&gt;:   lea    0x50(%rsp),%rsi</span><br><span class="line">0x00000000004011ba &lt;+198&gt;:   mov    %rbx,%rcx</span><br><span class="line">0x00000000004011bd &lt;+201&gt;:   mov    (%rax),%rdx</span><br><span class="line">0x00000000004011c0 &lt;+204&gt;:   mov    %rdx,0x8(%rcx)</span><br><span class="line">0x00000000004011c4 &lt;+208&gt;:   add    $0x8,%rax</span><br><span class="line">0x00000000004011c8 &lt;+212&gt;:   cmp    %rsi,%rax</span><br><span class="line">0x00000000004011cb &lt;+215&gt;:   je     0x4011d2 &lt;phase_6+222&gt;</span><br><span class="line">0x00000000004011cd &lt;+217&gt;:   mov    %rdx,%rcx</span><br><span class="line">0x00000000004011d0 &lt;+220&gt;:   jmp    0x4011bd &lt;phase_6+201&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这是一个循环，由于指针关系过于繁琐，我在这里重构了一个与它同功能的C语言代码</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>, j = <span class="number">1</span>; j &lt;= <span class="number">5</span>; i++, j++)&#123;</span><br><span class="line">    node[n[i]].next = node[n[j]];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码的意图很明显，按栈内链表结点的位置顺序重排单链表</p>
+<h4 id="Part-6"><a href="#Part-6" class="headerlink" title="Part 6"></a>Part 6</h4><p>胜利已经近在咫尺啦！</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x00000000004011d2 &lt;+222&gt;:   movq   $0x0,0x8(%rdx)</span><br><span class="line">0x00000000004011da &lt;+230&gt;:   mov    $0x5,%ebp</span><br><span class="line">0x00000000004011df &lt;+235&gt;:   mov    0x8(%rbx),%rax</span><br><span class="line">0x00000000004011e3 &lt;+239&gt;:   mov    (%rax),%eax</span><br><span class="line">0x00000000004011e5 &lt;+241&gt;:   cmp    %eax,(%rbx)</span><br><span class="line">0x00000000004011e7 &lt;+243&gt;:   jge    0x4011ee &lt;phase_6+250&gt;</span><br><span class="line">0x00000000004011e9 &lt;+245&gt;:   callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">0x00000000004011ee &lt;+250&gt;:   mov    0x8(%rbx),%rbx</span><br><span class="line">0x00000000004011f2 &lt;+254&gt;:   sub    $0x1,%ebp</span><br><span class="line">0x00000000004011f5 &lt;+257&gt;:   jne    0x4011df &lt;phase_6+235&gt;</span><br><span class="line">0x00000000004011f7 &lt;+259&gt;:   add    $0x50,%rsp</span><br><span class="line">0x00000000004011fb &lt;+263&gt;:   pop    %rbx</span><br><span class="line">0x00000000004011fc &lt;+264&gt;:   pop    %rbp</span><br><span class="line">0x00000000004011fd &lt;+265&gt;:   pop    %r12</span><br><span class="line">0x00000000004011ff &lt;+267&gt;:   pop    %r13</span><br><span class="line">0x0000000000401201 &lt;+269&gt;:   pop    %r14</span><br><span class="line">0x0000000000401203 &lt;+271&gt;:   retq</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第4-10行是一个循环，首先<code>(%rbx)</code>指向<code>node[n[0]]</code>，第5行，<code>(%eax)</code>存<code>node[n[1]]</code>，如果<code>node[n[0]]</code>小于<code>node[n[1]]</code>则爆炸，这样遍历一遍。</li>
+<li>由此可知，<code>node[i]</code>的值在栈中应该是递减的。</li>
+<li>先将<code>node[i].value</code>排下序：<code>node[3]&gt;node[4]&gt;node[5]&gt;node[6]&gt;node[1]&gt;node[2]</code></li>
+<li>因此：<code>n[0]=3,n[1]=4,n[2]=5,n[3]=6,n[4]=1,n[5]=2</code></li>
+</ul>
+<h3 id="key-5"><a href="#key-5" class="headerlink" title="key"></a>key</h3><p>由于我们输入的是<code>num[i]</code>，而<code>num[i]=7-n[i]</code>，因此输入的六个数字分别是：<strong>4 3 2 1 6 5</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227153314603.png" alt="image-20220227153314603"></p>
+<p>成功了！</p>
+<h2 id="secret-phase"><a href="#secret-phase" class="headerlink" title="secret_phase"></a>secret_phase</h2><p><strong>本实验就这样完结了么？事情并没有那么简单~</strong></p>
+<p>我是参考他人的解析才发现隐藏关的存在。</p>
+<p>在<code>bomb.c</code>的末尾有这样一行注释：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/* Wow, they got it!  But isn&#x27;t something... missing?  Perhaps</span></span><br><span class="line"><span class="comment"> * something they overlooked?  Mua ha ha ha ha! */</span></span><br></pre></td></tr></table></figure>
+
+<p>刚刚完成最后一关成就感满满的我心生疑惑，我忽略了什么？</p>
+<h3 id="反汇编phase-defused"><a href="#反汇编phase-defused" class="headerlink" title="反汇编phase_defused"></a>反汇编<code>phase_defused</code></h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0x00000000004015c4 &lt;+0&gt;:     sub    $0x78,%rsp</span><br><span class="line">0x00000000004015c8 &lt;+4&gt;:     mov    %fs:0x28,%rax</span><br><span class="line">0x00000000004015d1 &lt;+13&gt;:    mov    %rax,0x68(%rsp)</span><br><span class="line">0x00000000004015d6 &lt;+18&gt;:    xor    %eax,%eax</span><br><span class="line">0x00000000004015d8 &lt;+20&gt;:    cmpl   $0x6,0x202181(%rip)        # 0x603760 &lt;num_input_strings&gt;</span><br><span class="line">0x00000000004015df &lt;+27&gt;:    jne    0x40163f &lt;phase_defused+123&gt;</span><br><span class="line">0x00000000004015e1 &lt;+29&gt;:    lea    0x10(%rsp),%r8</span><br><span class="line">0x00000000004015e6 &lt;+34&gt;:    lea    0xc(%rsp),%rcx</span><br><span class="line">0x00000000004015eb &lt;+39&gt;:    lea    0x8(%rsp),%rdx</span><br><span class="line">0x00000000004015f0 &lt;+44&gt;:    mov    $0x402619,%esi</span><br><span class="line">0x00000000004015f5 &lt;+49&gt;:    mov    $0x603870,%edi</span><br><span class="line">0x00000000004015fa &lt;+54&gt;:    callq  0x400bf0 &lt;__isoc99_sscanf@plt&gt;</span><br><span class="line">0x00000000004015ff &lt;+59&gt;:    cmp    $0x3,%eax</span><br><span class="line">0x0000000000401602 &lt;+62&gt;:    jne    0x401635 &lt;phase_defused+113&gt;</span><br><span class="line">0x0000000000401604 &lt;+64&gt;:    mov    $0x402622,%esi</span><br><span class="line">0x0000000000401609 &lt;+69&gt;:    lea    0x10(%rsp),%rdi</span><br><span class="line">0x000000000040160e &lt;+74&gt;:    callq  0x401338 &lt;strings_not_equal&gt;</span><br><span class="line">0x0000000000401613 &lt;+79&gt;:    test   %eax,%eax</span><br><span class="line">0x0000000000401615 &lt;+81&gt;:    jne    0x401635 &lt;phase_defused+113&gt;</span><br><span class="line">0x0000000000401617 &lt;+83&gt;:    mov    $0x4024f8,%edi</span><br><span class="line">0x000000000040161c &lt;+88&gt;:    callq  0x400b10 &lt;puts@plt&gt;</span><br><span class="line">0x0000000000401621 &lt;+93&gt;:    mov    $0x402520,%edi</span><br><span class="line">0x0000000000401626 &lt;+98&gt;:    callq  0x400b10 &lt;puts@plt&gt;</span><br><span class="line">0x000000000040162b &lt;+103&gt;:   mov    $0x0,%eax</span><br><span class="line">0x0000000000401630 &lt;+108&gt;:   callq  0x401242 &lt;secret_phase&gt;</span><br><span class="line">0x0000000000401635 &lt;+113&gt;:   mov    $0x402558,%edi</span><br><span class="line">0x000000000040163a &lt;+118&gt;:   callq  0x400b10 &lt;puts@plt&gt;</span><br><span class="line">0x000000000040163f &lt;+123&gt;:   mov    0x68(%rsp),%rax</span><br><span class="line">0x0000000000401644 &lt;+128&gt;:   xor    %fs:0x28,%rax</span><br><span class="line">0x000000000040164d &lt;+137&gt;:   je     0x401654 &lt;phase_defused+144&gt;</span><br><span class="line">0x000000000040164f &lt;+139&gt;:   callq  0x400b30 &lt;__stack_chk_fail@plt&gt;</span><br><span class="line">0x0000000000401654 &lt;+144&gt;:   add    $0x78,%rsp</span><br><span class="line">0x0000000000401658 &lt;+148&gt;:   retq</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>查看第10行给的内存地址：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227155337268.png" alt="image-20220227155337268"></p>
+<ul>
+<li>第11行，很奇怪，这里给的地址对应的内存是空的。</li>
+<li>第12，13，14行，<code>(%eax)</code>储存着输入字符的数量，将其与3比较。在前几关中，并没有哪一关要输入3个字符。由此判断，这里就是进入隐藏关卡的关键。</li>
+<li>假设输入了3个字符，则会执行15-25行。15行给了一个内存地址，查看一下：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227155023476.png" alt="image-20220227155023476"></p>
+<ul>
+<li>接下来就是常规的判断字符串是否相等，一直到第19行，是说明如果字符串不相等依旧进不了隐藏关。</li>
+</ul>
+<p>根据以上判断，进入隐藏关的条件是，在某一个只需要输入两个数字的关卡中后面加上“DrEvil”。但是，<code>phase_3</code>和<code>phase_4</code>的答案均为两个数字，我们无法判断。</p>
+<ul>
+<li>突破口为第11行位置对应的内存，隐藏关入口的那一关输入的答案一定会存在这个内存中，否则后续无法比较判断。我们打断点看一下：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227162018104.png" alt="image-20220227162018104"></p>
+<p>这不正是<code>phase_4</code>的答案吗！<strong>隐藏关我来了！</strong></p>
+<h3 id="反汇编secret-phase"><a href="#反汇编secret-phase" class="headerlink" title="反汇编secret_phase"></a>反汇编<code>secret_phase</code></h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function secret_phase:</span><br><span class="line">   0x0000000000401242 &lt;+0&gt;:     push   %rbx</span><br><span class="line">   0x0000000000401243 &lt;+1&gt;:     callq  0x40149e &lt;read_line&gt;</span><br><span class="line">   0x0000000000401248 &lt;+6&gt;:     mov    $0xa,%edx</span><br><span class="line">   0x000000000040124d &lt;+11&gt;:    mov    $0x0,%esi</span><br><span class="line">   0x0000000000401252 &lt;+16&gt;:    mov    %rax,%rdi</span><br><span class="line">   0x0000000000401255 &lt;+19&gt;:    callq  0x400bd0 &lt;strtol@plt&gt;</span><br><span class="line">   0x000000000040125a &lt;+24&gt;:    mov    %rax,%rbx</span><br><span class="line">   0x000000000040125d &lt;+27&gt;:    lea    -0x1(%rax),%eax</span><br><span class="line">   0x0000000000401260 &lt;+30&gt;:    cmp    $0x3e8,%eax</span><br><span class="line">   0x0000000000401265 &lt;+35&gt;:    jbe    0x40126c &lt;secret_phase+42&gt;</span><br><span class="line">   0x0000000000401267 &lt;+37&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x000000000040126c &lt;+42&gt;:    mov    %ebx,%esi</span><br><span class="line">   0x000000000040126e &lt;+44&gt;:    mov    $0x6030f0,%edi</span><br><span class="line">   0x0000000000401273 &lt;+49&gt;:    callq  0x401204 &lt;fun7&gt;</span><br><span class="line">   0x0000000000401278 &lt;+54&gt;:    cmp    $0x2,%eax</span><br><span class="line">   0x000000000040127b &lt;+57&gt;:    je     0x401282 &lt;secret_phase+64&gt;</span><br><span class="line">   0x000000000040127d &lt;+59&gt;:    callq  0x40143a &lt;explode_bomb&gt;</span><br><span class="line">   0x0000000000401282 &lt;+64&gt;:    mov    $0x402438,%edi</span><br><span class="line">   0x0000000000401287 &lt;+69&gt;:    callq  0x400b10 &lt;puts@plt&gt;</span><br><span class="line">   0x000000000040128c &lt;+74&gt;:    callq  0x4015c4 &lt;phase_defused&gt;</span><br><span class="line">   0x0000000000401291 &lt;+79&gt;:    pop    %rbx</span><br><span class="line">   0x0000000000401292 &lt;+80&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>关注13，14行，这里要调用函数<code>fun7</code>，输入了两个参数，<code>%esi</code>存的是我们输入的数，<code>%edi</code>存了一个内存地址，等会再看</li>
+<li>第16行，比较<code>fun7</code>返回值与2的关系，若相等，则成功返回。</li>
+<li>读到这，就明确了我们的任务：使<code>fun7</code>返回2</li>
+</ul>
+<h4 id="反汇编fun7"><a href="#反汇编fun7" class="headerlink" title="反汇编fun7"></a>反汇编<code>fun7</code></h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function fun7:</span><br><span class="line">   0x0000000000401204 &lt;+0&gt;:     sub    $0x8,%rsp</span><br><span class="line">   0x0000000000401208 &lt;+4&gt;:     test   %rdi,%rdi</span><br><span class="line">   0x000000000040120b &lt;+7&gt;:     je     0x401238 &lt;fun7+52&gt;</span><br><span class="line">   0x000000000040120d &lt;+9&gt;:     mov    (%rdi),%edx</span><br><span class="line">   0x000000000040120f &lt;+11&gt;:    cmp    %esi,%edx</span><br><span class="line">   0x0000000000401211 &lt;+13&gt;:    jle    0x401220 &lt;fun7+28&gt;</span><br><span class="line">   0x0000000000401213 &lt;+15&gt;:    mov    0x8(%rdi),%rdi</span><br><span class="line">   0x0000000000401217 &lt;+19&gt;:    callq  0x401204 &lt;fun7&gt;</span><br><span class="line">   0x000000000040121c &lt;+24&gt;:    add    %eax,%eax</span><br><span class="line">   0x000000000040121e &lt;+26&gt;:    jmp    0x40123d &lt;fun7+57&gt;</span><br><span class="line">   0x0000000000401220 &lt;+28&gt;:    mov    $0x0,%eax</span><br><span class="line">   0x0000000000401225 &lt;+33&gt;:    cmp    %esi,%edx</span><br><span class="line">   0x0000000000401227 &lt;+35&gt;:    je     0x40123d &lt;fun7+57&gt;</span><br><span class="line">   0x0000000000401229 &lt;+37&gt;:    mov    0x10(%rdi),%rdi</span><br><span class="line">   0x000000000040122d &lt;+41&gt;:    callq  0x401204 &lt;fun7&gt;</span><br><span class="line">   0x0000000000401232 &lt;+46&gt;:    lea    0x1(%rax,%rax,1),%eax</span><br><span class="line">   0x0000000000401236 &lt;+50&gt;:    jmp    0x40123d &lt;fun7+57&gt;</span><br><span class="line">   0x0000000000401238 &lt;+52&gt;:    mov    $0xffffffff,%eax</span><br><span class="line">   0x000000000040123d &lt;+57&gt;:    add    $0x8,%rsp</span><br><span class="line">   0x0000000000401241 &lt;+61&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>第6行，比较我们的数与传入内存地址中存的数，</p>
+</li>
+<li><p>查看该地址存的内容：</p>
+</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227165802219.png" alt="image-20220227165802219"></p>
+<p>这类似树结构，结构定义如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">tree</span>&#123;</span></span><br><span class="line">    <span class="type">int</span> val;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tree</span>* <span class="title">left</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tree</span>* <span class="title">right</span>;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>根据节点关系，画出树：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227172958701.png" alt="image-20220227172958701"></p>
+<p>根据其大小关系，猜测是一个二叉排序树。接下来返回原函数查看</p>
+<ul>
+<li>这是一个递归调用的函数，写出它的C语言代码如下：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">fun7</span><span class="params">(Tree* rdi, <span class="type">int</span> esi)</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> (!rdi)	<span class="comment">//第3，4行</span></span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;	<span class="comment">//19</span></span><br><span class="line">	<span class="keyword">if</span> (rdi-&gt;val == esi)	<span class="comment">//13</span></span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;		<span class="comment">//20</span></span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (rdi-&gt;val &lt; esi)		<span class="comment">//7</span></span><br><span class="line">		<span class="keyword">return</span> <span class="number">2</span> * fun7(rdi -&gt; right, esi) + <span class="number">1</span>;	<span class="comment">//15,16</span></span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		<span class="keyword">return</span> <span class="number">2</span> * fun7(rdi -&gt; left, esi);	<span class="comment">//8,9</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>是一个类查找的过程，最后结果应该返回2</li>
+<li>我们逆推找到这个数：</li>
+<li>要想返回2，则上一次返回值一定为1，并且从左子树返回</li>
+<li>要想返回1，则上一次返回值一定为0，并且从右子树返回</li>
+<li>返回值为0，则当前结点的值就是输入的值</li>
+<li>所以我们从36开始，先到左子树8，再到右子树22。最终结果就是22。</li>
+</ul>
+<h3 id="key-6"><a href="#key-6" class="headerlink" title="key"></a>key</h3><p>22</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220227203903589.png" alt="image-20220227203903589"></p>
+<p>成功！</p>
+<p>至此，该实验的全部关卡包括隐藏关卡就都通过啦！</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li><p>CMU 的 Bomblab 果然名不虚传，我做完之后顿觉浑身通透，酣畅淋漓。</p>
+</li>
+<li><p><code>phase_1</code>和<code>phase_2</code>都是对基本功的考察，很容易就能做出来；从<code>phase_3</code>开始，代码量一下子就上去了，各种循环，函数嵌套，以及递归调用，令人脑容量爆炸，做这种题必须先将其转化为C语言代码；<code>part_5</code>的逻辑设定最令我惊艳，它通过输入的字符的<code>ASCII</code>来定位原本存在的字符，层层破解，快感十足；<code>phase_6</code>和<code>secret_phase</code>耗时最长，逻辑繁复，但对我的提升也是最大的，它们让我了解到各种数据结构的机器级实现方式，让我面对一大堆狰狞的代码依旧能静下心来慢慢揣摩。</p>
+</li>
+<li><p>本实验耗时4天，约18小时。</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>CSAPP Lab</category>
+      </categories>
+      <tags>
+        <tag>计算机科学</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>GDB 调试器的使用</title>
+    <url>/2022/02/22/gdb/</url>
+    <content><![CDATA[<p><strong>本文只列出与BombLab实验相关的部分指令</strong></p>
+<h2 id="基本信息查看"><a href="#基本信息查看" class="headerlink" title="基本信息查看"></a>基本信息查看</h2><h3 id="栈信息"><a href="#栈信息" class="headerlink" title="栈信息"></a>栈信息</h3><p>不管是操作转储文件还是用GDB设置断点进行调试，都可以输入 (gdb)bt 打印栈内容进行查看。一般的宕机BUG，看下宕机的位置，然后看下源代码基本就可以解决了。但是很多情况下简单的 (gdb)bt 还查不到问题，这时候就要涉及到比较复杂的操作。下面罗列了一些对栈的操作：</p>
+<ul>
+<li><code>(gdb) bt</code>：显示所有栈帧</li>
+<li><code>(gdb) bt 10</code>：显示前面10个栈帧</li>
+<li><code>(gdb) bt -10</code>：显示后面10个栈帧</li>
+<li><code>(gdb) bt full</code>：显示栈帧以及局部变量</li>
+<li><code>(gdb) bt full 10</code>：显示前面10个栈帧以及局部变量<span id="more"></span></li>
+<li><code>(gdb) bt full -10</code>：显示后面10个栈帧以及局部变量</li>
+<li><code>(gdb) frame &lt;栈帧编号&gt;</code>：进入指定的栈帧中，然后可以查看当前栈帧中的局部变量，以及栈帧内容等信息</li>
+<li><code>(gdb) info frame &lt;栈帧编号&gt;</code>：可以查看指定栈帧的详细信息</li>
+<li><code>(gdb) up</code>：进入上层栈帧</li>
+<li><code>(gdb) down</code>：进入下层栈帧</li>
+</ul>
+<h3 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h3><p>调试BUG过程中查看变量信息是很有帮助的操作，查看方式如下：</p>
+<ul>
+<li><code>(gdb) p &lt;变量名&gt;</code></li>
+</ul>
+<h3 id="寄存器"><a href="#寄存器" class="headerlink" title="寄存器"></a>寄存器</h3><p>对于调试来说寄存器中的值也很重要，可以查看到当前正在执行的指令的地址等。具体操作罗列如下：</p>
+<ul>
+<li><code>(gdb) info reg</code>：显示所有寄存器。可以简写为：<code>i r</code>。如果要查看具体的寄存器可以这样：<code>i $ebx</code></li>
+<li><code>(gdb) p $eax</code>：显示eax寄存器内容</li>
+<li><code>(gdb) p/c $eax</code>：用字符显示eax寄存器内容，反斜杠后面的是显示格式，可使用的格式见下表：该表在显示内存内容的x命令中也是通用的</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">格式</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">x</td>
+<td align="center">显示为十六进制数</td>
+</tr>
+<tr>
+<td align="center">d</td>
+<td align="center">显示为十进制数</td>
+</tr>
+<tr>
+<td align="center">u</td>
+<td align="center">显示位为符号十进制数</td>
+</tr>
+<tr>
+<td align="center">o</td>
+<td align="center">显示为八进制数</td>
+</tr>
+<tr>
+<td align="center">t</td>
+<td align="center">显示为二进制数</td>
+</tr>
+<tr>
+<td align="center">a</td>
+<td align="center">显示为地址</td>
+</tr>
+<tr>
+<td align="center">c</td>
+<td align="center">显示为字符（ASCII）</td>
+</tr>
+<tr>
+<td align="center">f</td>
+<td align="center">显示为浮点数</td>
+</tr>
+<tr>
+<td align="center">s</td>
+<td align="center">显示为字符串</td>
+</tr>
+<tr>
+<td align="center">i</td>
+<td align="center">显示为机器语言（仅在显示内存的x命令中可用）</td>
+</tr>
+</tbody></table>
+<h3 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h3><p>可以查看具体内存地址中的内容，比如：目前执行的汇编指令，以及栈中的内容等。</p>
+<ul>
+<li><code>(gdb) x $pc</code>：显示程序指针指向位置的内容</li>
+<li><code>(gdb) x/i $pc</code>：显示程序当前位置的汇编指令</li>
+<li><code>(gdb) x/10i $pc</code>：显示程序当前位置开始往后的10条汇编指令</li>
+<li><code>(gdb) disas $pc</code>：反汇编当前函数</li>
+</ul>
+<h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h3><h4 id="断点："><a href="#断点：" class="headerlink" title="断点："></a>断点：</h4><p>调试程序中，设置断点进行调试是最方便有效的手段，因此学会如果灵活设置断点是调试的基本功。</p>
+<h5 id="设置断点"><a href="#设置断点" class="headerlink" title="设置断点"></a>设置断点</h5><ul>
+<li><code>(gdb) break &lt;函数名&gt;</code>：对当前正在执行的文件中的指定函数设置断点。可简写为：(gdb) b &lt;函数名&gt;</li>
+<li><code>(gdb) break &lt;行号&gt;</code>：对当前正在执行的文件中的特定行设置断点。可简写为：(gdb) b &lt;行号&gt;</li>
+<li><code>(gdb) break &lt;文件名：行号&gt;</code>：对指定文件的指定行设置断点。最常用的设置断点方式。可简写为：(gdb) b &lt;文件名：行号&gt;</li>
+<li><code>(gdb) break &lt;文件名：函数名&gt;</code>：对指定文件的指定函数设置断点。C++类中的方法似乎不好使。可简写为：(gdb) b &lt;文件名：函数名&gt;</li>
+<li><code>(gdb) break &lt;+/-偏移量&gt;</code>：当前指令行+&#x2F;-偏移量出设置断点。可简写为：b &lt;+&#x2F;-偏移量&gt;</li>
+<li><code>(gdb) break &lt;*地址&gt;</code>：指定地址处设置断点。可简写为：b &lt;*地址&gt;</li>
+</ul>
+<h5 id="查看、删除断点"><a href="#查看、删除断点" class="headerlink" title="查看、删除断点"></a>查看、删除断点</h5><ul>
+<li><code>(gdb) info break</code>：显示所有断点以及监视点。可简写为：(gdb) i b</li>
+<li><code>(gdb) delete &lt;编号&gt;</code>：删除编号指向的断电或者监视点。可简写为：(gdb) d &lt;编号&gt;</li>
+<li><code>(gdb) clear &lt;行号&gt;</code>：删除该行的断点</li>
+<li><code>(gdb) clear &lt;文件号：行号&gt;</code>：删除该行的断点</li>
+</ul>
+<h5 id="设置无效、有效断点"><a href="#设置无效、有效断点" class="headerlink" title="设置无效、有效断点"></a>设置无效、有效断点</h5><ul>
+<li><code>(gdb) disble &lt;断电编号&gt;</code>：当前断点设置为无效</li>
+<li><code>(gdb) enable</code>：当前断点设置为有效</li>
+</ul>
+<h4 id="监视点"><a href="#监视点" class="headerlink" title="监视点"></a>监视点</h4><p>可以监视某个变量，在变量被访问或者被修改时程序会在当前点进入断点。删除，查看监视点的方式与断点相同。设置监视点方式如下：</p>
+<ul>
+<li><code>(gdb) watch &lt;表达式&gt;</code>：表达式发生变化时暂停</li>
+<li><code>(gdb) awatch &lt;表达式&gt;</code>：表达式访问或者改变时暂停</li>
+<li><code>(gdb) rwatch &lt;表达式&gt;</code>：表达式被访问时暂停</li>
+</ul>
+<h4 id="条件断点"><a href="#条件断点" class="headerlink" title="条件断点"></a>条件断点</h4><p>在调试程序过程中，有时候我们只想在某个条件下停止程序，然后进行单步调试，而条件断点就是为此而设计。下面是条件断点的操作方式：</p>
+<ul>
+<li><code>(gdb) b &lt;断点&gt; if &lt;条件表达式&gt;</code> : 例如：b main.cpp:8 if x&#x3D;10 &amp;&amp; y&#x3D;10</li>
+<li><code>(gdb) condition &lt;断点编号&gt;</code>：删除该断点的条件。</li>
+<li><code>(gdb) condition &lt;断点编号&gt; &lt;条件表达式&gt;</code>：修改断点条件。例如：condition 1 x&#x3D;10 &amp;&amp; y&#x3D;10</li>
+</ul>
+<h4 id="断点命令"><a href="#断点命令" class="headerlink" title="断点命令"></a>断点命令</h4><p>每次断点发生时候，想要查看的变量很多时，如果每个变量都手动print则需要浪费很多时间。断点命令可以在断点发生时批量执行GDB命令。下面是断点命令的设置方式：</p>
+<ul>
+<li><p><code>(gdb) commands &lt;断点编号&gt;</code></p>
+</li>
+<li><p><code>(gdb) &gt;print x</code></p>
+</li>
+<li><p><code>(gdb) &gt;print y</code></p>
+</li>
+<li><p><code>(gdb) &gt;end</code></p>
+<p>  首先输入GDB命令commands &lt;断点编号&gt;然后回车，这时候会出现&gt;提示符。出现&gt;提示符后可以输入断点发生时需要执行的GDB命令，每行一条，全部输入完成后输入end结束断点命令。</p>
+</li>
+</ul>
+<h4 id="反复执行"><a href="#反复执行" class="headerlink" title="反复执行"></a>反复执行</h4><p>单步执行时如果进入了你不关心的函数，你想立即跳出函数；或者进入了大循环中，你想立即循环。下面的命令可以帮到你：  </p>
+<ul>
+<li><code>(gdb) ignore &lt;断点编号&gt; &lt;次数&gt;</code>：忽略N次断点</li>
+<li><code>(gdb) c N</code>： 执行N次指令，会忽略断点</li>
+<li><code>(gdb) s/stepi/n/nexti N</code>：往后执行N行，不会忽略断点</li>
+<li><code>(gdb) finish</code>：执行完当前函数后停止，不会忽略断点</li>
+<li><code>(gdb) until</code>：执行完当前循环后停止，不会忽略断点</li>
+<li><code>(gdb) until &lt;地址&gt;</code>：执行到指定地址停止</li>
+</ul>
+<h4 id="设置变量值"><a href="#设置变量值" class="headerlink" title="设置变量值"></a>设置变量值</h4><p>对变量的值进行控制，可以更快的调试自己的程序。下面就是设置变量值的方法：</p>
+<ul>
+<li><code>(gdb) set variable &lt;变量&gt; = &lt;表达式&gt;</code>：将变量的值设定为指定表达式的值。例如 set variable x&#x3D;10</li>
+</ul>
+<h4 id="手动生成转储文件"><a href="#手动生成转储文件" class="headerlink" title="手动生成转储文件"></a>手动生成转储文件</h4><ul>
+<li><code>(gdb) generate-core-file</code> 简写为：<code>(gdb) gcore</code></li>
+</ul>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>计算机科学</tag>
+        <tag>工具</tag>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>测试</title>
+    <url>/2022/02/08/%E6%B5%8B%E8%AF%95/</url>
+    <content><![CDATA[<h2 id="图片测试"><a href="#图片测试" class="headerlink" title="图片测试"></a>图片测试</h2><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220206213723103.png" alt="git bash"><span id="more"></span></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/ABT77780D0A495FA6A3DB9511A94831CE7D0B6A2C6F631C7B2CB58980FE09D12F4D.jpg" alt="风景"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/wallhaven-m9y289.png" alt="vim键位"></p>
+<h2 id="公式测试"><a href="#公式测试" class="headerlink" title="公式测试"></a>公式测试</h2><p>$F&#x3D;2x^2+3x+3$</p>
+<p>$$ \overbrace{1+2+\cdots+n}^{n个} \qquad \underbrace{a+b+\cdots+z}_{26}$$</p>
+<h2 id="代码高亮"><a href="#代码高亮" class="headerlink" title="代码高亮"></a>代码高亮</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">interp</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> value;</span><br><span class="line">    <span class="type">int</span> block = <span class="number">0</span>;</span><br><span class="line">    <span class="type">char</span> *tmp_prog = <span class="literal">NULL</span>;</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(breakfound)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">//如果这是个&#123;&#125;包含的块, 那么就用find_eob把整个块吃掉</span></span><br><span class="line">            <span class="keyword">if</span>(block &amp;&amp; tmp_prog)</span><br><span class="line">            &#123;</span><br><span class="line">                prog = tmp_prog;</span><br><span class="line">                <span class="built_in">find_eob</span>();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">//对于知识一条语句的块, 在break跳出之前吃掉这个分号</span></span><br><span class="line">                <span class="built_in">get_token</span>();</span><br><span class="line">                </span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        token_type = <span class="built_in">get_token</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// See what kind of token is up.</span></span><br><span class="line">        <span class="keyword">if</span>(token_type == IDENTIFIER ||</span><br><span class="line">                *token == INC || *token == DEC)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// Not a keyword, so process expression.</span></span><br><span class="line">            <span class="built_in">putback</span>();  <span class="comment">// restore token to input stream for</span></span><br><span class="line">            <span class="comment">// further processing by eval_exp()</span></span><br><span class="line">            <span class="built_in">eval_exp</span>(value); <span class="comment">// process the expression</span></span><br><span class="line">            <span class="keyword">if</span>(*token != <span class="string">&#x27;;&#x27;</span>) <span class="keyword">throw</span> <span class="built_in">InterpExc</span>(SEMI_EXPECTED);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(token_type == BLOCK) <span class="comment">// block delimiter?</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(*token == <span class="string">&#x27;&#123;&#x27;</span>)   <span class="comment">// is a block</span></span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">putback</span>();</span><br><span class="line">                tmp_prog = prog;</span><br><span class="line">                <span class="built_in">get_token</span>();</span><br><span class="line">                block = <span class="number">1</span>; <span class="comment">// interpreting block, not statement</span></span><br><span class="line">                <span class="comment">// Record nested scope.</span></span><br><span class="line">                nest_scope_stack.<span class="built_in">push</span>(local_var_stack.<span class="built_in">size</span>());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span>   <span class="comment">// is a &#125;, so reset scope and return</span></span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">// Reset nested scope.</span></span><br><span class="line">                local_var_stack.<span class="built_in">resize</span>(nest_scope_stack.<span class="built_in">top</span>());</span><br><span class="line">                nest_scope_stack.<span class="built_in">pop</span>();</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="comment">// is keyword</span></span><br><span class="line">            <span class="keyword">switch</span>(tok)</span><br><span class="line">            &#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//通过向前看来搞定的.</span></span><br><span class="line">            <span class="keyword">case</span> CHAR:</span><br><span class="line">            <span class="keyword">case</span> INT:     <span class="comment">// declare local variables</span></span><br><span class="line">                <span class="built_in">putback</span>();</span><br><span class="line">                <span class="built_in">decl_local</span>();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> RETURN:  <span class="comment">// return from function call</span></span><br><span class="line">                <span class="built_in">func_ret</span>();</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            <span class="keyword">case</span> IF:      <span class="comment">// process an if statement</span></span><br><span class="line">                <span class="built_in">exec_if</span>();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> ELSE:    <span class="comment">// process an else statement</span></span><br><span class="line">                <span class="built_in">find_eob</span>(); <span class="comment">// find end of else block</span></span><br><span class="line">                <span class="comment">// and continue execution</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> WHILE:   <span class="comment">// process a while loop</span></span><br><span class="line">                <span class="built_in">exec_while</span>();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> DO:      <span class="comment">// process a do-while loop</span></span><br><span class="line">                <span class="built_in">exec_do</span>();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> FOR:     <span class="comment">// process a for loop</span></span><br><span class="line">                <span class="built_in">exec_for</span>();</span><br><span class="line">                </span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> BREAK:   <span class="comment">// handle break</span></span><br><span class="line">                breakfound = <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">                <span class="comment">// Reset nested scope.</span></span><br><span class="line">                <span class="comment">//这里要特判一下是不是从一个block里面的break, 因为在我修改之后, for while的循环体现在可以是</span></span><br><span class="line">                <span class="comment">//一个单个的语句了</span></span><br><span class="line">                <span class="keyword">if</span>(block)</span><br><span class="line">                &#123;</span><br><span class="line">                    local_var_stack.<span class="built_in">resize</span>(nest_scope_stack.<span class="built_in">top</span>());</span><br><span class="line">                    nest_scope_stack.<span class="built_in">pop</span>();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> SWITCH:  <span class="comment">// handle a switch statement</span></span><br><span class="line">                <span class="built_in">exec_switch</span>();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> COUT:    <span class="comment">// handle console output</span></span><br><span class="line">                <span class="built_in">exec_cout</span>();</span><br><span class="line">                <span class="comment">//cout &lt;&lt; &quot;breakfuond :&quot; &lt;&lt; breakfound &lt;&lt; endl;</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> CIN:     <span class="comment">// handle console input</span></span><br><span class="line">                <span class="built_in">exec_cin</span>();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> END:</span><br><span class="line">                <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> (tok != END &amp;&amp; block);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+]]></content>
+      <categories>
+        <category>关于建站</category>
+      </categories>
+      <tags>
+        <tag>建站</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CSAPP-Lab01 Data Lab 记录</title>
+    <url>/2022/02/10/CSAPP-Lab01/</url>
+    <content><![CDATA[<h1 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h1><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/20200409205146245.png" alt="题目列表"></p>
+<h1 id="Problem-int"><a href="#Problem-int" class="headerlink" title="Problem-int"></a>Problem-int</h1><h2 id="bitXor"><a href="#bitXor" class="headerlink" title="bitXor"></a>bitXor</h2><ul>
+<li>bitXor - x^y using only ~ and &amp; </li>
+<li>Example: bitXor(4, 5) &#x3D; 1</li>
+<li>Legal ops: ~ &amp;</li>
+<li>Max ops: 14</li>
+</ul>
+<p>要求只用“非”和“与”来表示“异或”。首先想到“异或的非&#x3D;同或”：<span id="more"></span><br>$$<br>\begin{aligned}x\oplus y&amp;&#x3D;\overline{x}y+x\overline{y}\newline<br>&amp;&#x3D;\overline{\overline{\overline{x}y}\cdot\overline{\overline{y}x}}\newline<br>&amp;&#x3D;\overline{(x+\overline{y})\cdot(\overline{x}+y)}\newline<br>&amp;&#x3D;\overline{xy+\overline{x}\overline{y}}<br>\end{aligned}<br>$$<br>将里面的“或”变成“和”，只需利用德摩根定律：<br>$$<br>\begin{aligned}<br>\overline{xy+\overline{x}\overline{y}}&#x3D;\overline{x\cdot y}\cdot\overline{\overline{x}\cdot\overline{y}}<br>\end{aligned}<br>$$</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">bitXor</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~(x&amp;y)&amp;(~x&amp;~y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="tmin"><a href="#tmin" class="headerlink" title="tmin"></a>tmin</h2><ul>
+<li>tmin - return minimum two’s complement integer </li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 4</li>
+</ul>
+<p>对于32位int, Tmin &#x3D; 0x80000000, 将 1 左移31位即可</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">tmin</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>&lt;&lt;<span class="number">31</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="isTmax"><a href="#isTmax" class="headerlink" title="isTmax"></a>isTmax</h2><ul>
+<li>isTmax - returns 1 if x is the maximum, two’s complement number,</li>
+<li>and 0 otherwise </li>
+<li>Legal ops: ! ~ &amp; ^ | +</li>
+<li>Max ops: 10</li>
+</ul>
+<p>首先，我们知道 Tmax &#x3D; 0x7FFFFFFF, 不难想到求 Tmax+1 &#x3D; Tmin &#x3D; 0x80000000。观察可知，<code>~(Tmax+1) = Tmax</code>，只需判断 <code>~(x+1)</code> 与 x 是否相等即可得出结论。但是，题目要求不能用等于号，于是利用 x^x &#x3D; 0 的性质进行判断，即 <code>return !~(x+1)^x</code>。</p>
+<p>然而，这样是过不了的。仔细揣摩，-1 &#x3D; 0xFFFFFFFF。对其进行加1后，该操作数会被截断，高位进位无效，使得结果为0x00000000，每一位刚好也和-1的每一位互补。因此，x &#x3D; -1的情况是需要特判的。</p>
+<p>在C语言中，非0即为真。利用 x+1&#x3D;0 时结果为假这一特点，当 x &#x3D; -1 时，! (x+1) &#x3D; 1, 再用 ! (x+1) 与 原判式 !$ \sim $(x+1)^x 进行或运算，即 <code>(~(x+1)^x)|!(x+1)</code>, 则该式在 x &#x3D; -1 时一定为真，x !&#x3D; -1 时真假就一定取决于 <code>~(x+1)^x</code> 。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isTmax</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> !(~(x+<span class="number">1</span>)^x|!(x+<span class="number">1</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="allOddBits"><a href="#allOddBits" class="headerlink" title="allOddBits"></a>allOddBits</h2><ul>
+<li>allOddBits - return 1 if all odd-numbered bits in word set to 1</li>
+<li>where bits are numbered from 0 (least significant) to 31 (most significant)</li>
+<li>Examples allOddBits(0xFFFFFFFD) &#x3D; 0, allOddBits(0xAAAAAAAA) &#x3D; 1</li>
+<li>Legal ops: ! $ \sim $ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 12</li>
+</ul>
+<p>这道题本身是很简单的，很容易想到构造一个32位的奇数位全为1的数 y &#x3D; 0xAAAAAAAA，将其与 x 进行与运算，如果结果仍为 y, 则 x 的奇数位均为 1.</p>
+<p>但要注意本实验的一个要求：</p>
+<blockquote>
+<p>Integer constants 0 through 255 (0xFF), inclusive. You are not allowed to use big constants such as 0xffffffff.</p>
+</blockquote>
+<p>考虑先构造0xAA, 然后利用移位操作得到 0xAAAAAAAA。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">allOddBits</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="type">int</span> y = <span class="number">0xAA</span> + (<span class="number">0xAA</span> &lt;&lt; <span class="number">8</span>);</span><br><span class="line">	y = y + (y &lt;&lt; <span class="number">16</span>);</span><br><span class="line">	<span class="keyword">return</span> !((x&amp;y)^y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="negate"><a href="#negate" class="headerlink" title="negate"></a>negate</h2><ul>
+<li>negate - return -x </li>
+<li>Example: negate(1) &#x3D; -1.</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 5</li>
+</ul>
+<p>很基础的结论： <code>~x + x = -1</code></p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">negate</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~x+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="isAsciiDigit"><a href="#isAsciiDigit" class="headerlink" title="isAsciiDigit"></a>isAsciiDigit</h2><ul>
+<li>isAsciiDigit - return 1 if 0x30 &lt;&#x3D; x &lt;&#x3D; 0x39 (ASCII codes for characters ‘0’ to ‘9’)</li>
+<li>Example: <ul>
+<li>isAsciiDigit(0x35) &#x3D; 1</li>
+<li>isAsciiDigit(0x3a) &#x3D; 0</li>
+<li>isAsciiDigit(0x05) &#x3D; 0</li>
+</ul>
+</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 15</li>
+</ul>
+<p>0x30 &#x3D; 0…0 00</p>
+<p>11 0000</p>
+<p>0x39 &#x3D; 0…0 0011 1001</p>
+<ol>
+<li><p>先检查高26位是否全为0，作为条件1</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag1 = !(x &gt;&gt; <span class="number">6</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>再检查中间是否为0011，作为条件2</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag2 = !(<span class="number">0b11</span> ^ (x &gt;&gt; <span class="number">4</span>));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后检查末尾4位是否在0000与1001之间， 先得到最后四位数</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> y = x &amp; (<span class="number">0xF</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>y 在 0 到 9 之间，则 y - 10 &lt; 0，由于符号限制，我们通过移位后判断符号位来作为条件3。由于不能用减法，可以通过<code>-x = ~x +1</code>达到目的</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag3 = (y + ~<span class="number">0xA</span> + <span class="number">1</span>) &gt;&gt; <span class="number">31</span>;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isAsciiDigit</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> (!(x &gt;&gt; <span class="number">6</span>)) &amp; (!(<span class="number">0b11</span> ^ (x &gt;&gt; <span class="number">4</span>))) &amp; (((x &amp; (<span class="number">0xF</span>)) + ~<span class="number">0xA</span> + <span class="number">1</span>) &gt;&gt; <span class="number">31</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="conditional"><a href="#conditional" class="headerlink" title="conditional"></a>conditional</h2><ul>
+<li>conditional - same as x ? y : z </li>
+<li>Example: conditional(2,4,5) &#x3D; 4</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 16</li>
+</ul>
+<p>这个题很基础<br>$$<br>F &#x3D; \overline xz+xy<br>$$<br>先将 x 归整化</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">x = !x</span><br></pre></td></tr></table></figure>
+
+<p>当 $x&#x3D;0$时， y &#x3D; 0x00000001, 考虑 $\sim y+1 &#x3D;$ 0xFFFFFFFF</p>
+<p>当 $x\neq0$时， y &#x3D; 0, 考虑 $~\sim(\sim y+1) &#x3D;$ 0xFFFFFFFF</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">conditional</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y, <span class="type">int</span> z)</span> &#123;</span><br><span class="line">	x = ~(!x)+<span class="number">1</span>;</span><br><span class="line">	<span class="keyword">return</span> (x&amp;z)+(~x&amp;y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="isLessOrEqual"><a href="#isLessOrEqual" class="headerlink" title="isLessOrEqual"></a>isLessOrEqual</h2><ul>
+<li>isLessOrEqual - if x &lt;&#x3D; y  then return 1, else return 0 </li>
+<li>Example: isLessOrEqual(4,5) &#x3D; 1.</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 24</li>
+</ul>
+<p>考虑 x - y</p>
+<p>当 y 与 x 同号时，x - y 不会溢出，因此判断 x - y 的符号即可</p>
+<p>当 y 与 x 异号时，x - y 可能会溢出，这时只分别判断 y 和 x 的符号即可</p>
+<p>首先利用移位操作，分别得到 x, y 的符号位。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> signx = (x &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line"><span class="type">int</span> signy = (y &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>设置情况flag1, x负 y正，满足情况，返回1；x正 y负，返回0</p>
+<table>
+<thead>
+<tr>
+<th align="center">正负</th>
+<th align="center">signx</th>
+<th align="center">signy</th>
+<th align="center">返回值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">x正 y负</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">x负 y正</td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+</tbody></table>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag1 = signx &amp; (!signy)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>在x, y 同号的前提下</strong>，计算 x - y，也就是 <code>x+~y+1</code>, 移位取符号位。</p>
+<p>但是要注意到：x &#x3D; y 时，<code>x+~y+1 = 0</code>的符号位为0，与 x &lt; y 时的符号位为 1 不同，因此，x &#x3D; y 的情况需要特判。</p>
+<p>我在这里用了一种较为巧妙的办法，$x\leq y$ 等价于$x &lt;y + 1$ , 使x &#x3D; y + 1 时，符号位才为0，只需要将<code>x+ ~y+1</code>减 1 即可。</p>
+<p>即最终求 <code>x+~y</code> 的符号位。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> e = signx ^ signy; <span class="comment">//同号</span></span><br><span class="line"><span class="type">int</span> flag2 = ((!e) &amp; ((x + ~y) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>);</span><br></pre></td></tr></table></figure></li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isLessOrEqual</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y)</span> &#123;</span><br><span class="line">	<span class="type">int</span> signx = (x &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line">	<span class="type">int</span> signy = (y &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line">	<span class="type">int</span> flag1 = signx &amp; (!signy);</span><br><span class="line">	<span class="type">int</span> e = signx ^ signy; <span class="comment">//同号</span></span><br><span class="line">	<span class="type">int</span> flag2 = ((!e) &amp; ((x + ~y) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">return</span> flag1 | flag2;</span><br><span class="line">&#125;	</span><br></pre></td></tr></table></figure>
+
+<h2 id="logicalNeg"><a href="#logicalNeg" class="headerlink" title="logicalNeg"></a>logicalNeg</h2><ul>
+<li>logicalNeg - implement the ! operator, using all of </li>
+<li>the legal operators except !</li>
+<li>Examples: logicalNeg(3) &#x3D; 0, logicalNeg(0) &#x3D; 1</li>
+<li>Legal ops: ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 12</li>
+</ul>
+<p>当 x &#x3D; 0 时，-x &#x3D; 0，两者符号位相同，而当 $x\neq 0$ 时，-x 与 x 的符号位显然不同，由此就可以解决本题。</p>
+<p>令 x 与 -x 异或，则若 x &#x3D; 0, 则异或后的符号位为0，否则为1，取符号位作为结果，则得到的结果刚好与题目中要求的返回值相反。</p>
+<p>接下来要解决的问题就是实现 0x00000000 与 0x00000001 的相互转换，只需将其取反再加 2 即可</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">logicalNeg</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~((((~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>) + <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>进一步优化：</strong>上述做法使用了 7 个操作符，总给人一种南辕北辙的感觉。原因在于没有利用算术右移的特点</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">(~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>;</span><br></pre></td></tr></table></figure>
+
+<p>在这一步中，如果$x\neq 0$, 那么由于符号位为 1 ，右移后的结果便为0x11111111, 令其加 1 ，刚好为 0；显然，当 x &#x3D; 0 时，令结果加 1 ，刚好为 1 。于是，不需要“与”操作来置0高位，在移位完成后直接将结果加 1 ，便可过掉本题</p>
+<p>只用了 5 个操作符</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">logicalNeg</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> (((~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>) + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="howManyBits"><a href="#howManyBits" class="headerlink" title="howManyBits"></a>howManyBits</h2><ul>
+<li>howManyBits - return the minimum number of bits required to represent x in</li>
+<li>two’s complement</li>
+<li>Examples: <ul>
+<li>howManyBits(12) &#x3D; 5</li>
+<li>howManyBits(298) &#x3D; 10</li>
+<li>howManyBits(-5) &#x3D; 4</li>
+<li>howManyBits(0)  &#x3D; 1</li>
+<li>howManyBits(-1) &#x3D; 1</li>
+<li>howManyBits(0x80000000) &#x3D; 32</li>
+</ul>
+</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 90</li>
+</ul>
+<p><strong>题意理解</strong></p>
+<p>x 为正数，以八位为例：0011 1010，需找到最高位 1，除此以外，还需一位 0 作为符号位；</p>
+<p>x 为负数，以八位为例：1100 1001，需找到最高位 0，除此以外，还需更高一位 1 作为符号位</p>
+<p><strong>做法</strong></p>
+<ol>
+<li><p>为了统一，不妨当 x 为负数时，将其取反，如上例：$\sim $x &#x3D; 0011 0110, 那么也只需要找到最高位 1 后再加一位就好，这步操作如下</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag = x &gt;&gt; <span class="number">31</span>;</span><br><span class="line">x = ((~flag) &amp; x) | (flag &amp; (~x));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>利用二分的思想，先考虑高16位：</p>
+<p><strong>0001 1000 1100 0000 | 0000 0100 1000 0000</strong></p>
+<p>将 x 右移16位 x &#x3D; x &gt;&gt; 16 ：</p>
+<p><strong>0000 0000 0000 0000 | 0001 1000 1100 0000</strong></p>
+<p>进行规格化处理 x &#x3D; !! x：</p>
+<p><strong>0000 0000 0000 0000 | 0000 0000 0000 0001</strong></p>
+<p>若高 16 位有 1，处理后的 x &#x3D; 0x00000001。需要的位数至少为 16，引入变量 bit_16 记录该权重。怎么做呢？将处理后的 x 左移 4 位即可</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> bit_16 = (!!(x &gt;&gt; <span class="number">16</span>)) &lt;&lt; <span class="number">4</span>; </span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果高 16 位有 1 ，则将 x 右移 16 位，对右移后的 x 的低 16 位中的高 8 位进行同样的操作，从而二分地在 x 的高16位中找到最大位的 1 ；如果高 16 位没有 1 ，则 x 无需右移， 在 x 的低 16 位中的高 8 位进行同样的操作。</p>
+<p>由此可得右移操作：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">x = x &gt;&gt; bit_16;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>同理，分别对高 8 位，4位，2位，1位进行检查，检查后进行同样的操作。</p>
+</li>
+<li><p>最后将所有权重求和，便是最终结果</p>
+</li>
+</ol>
+<p><strong>举例</strong></p>
+<ul>
+<li><p>设 x &#x3D; 1101 1000 1100 0000 | 0000 0100 1000 0000</p>
+</li>
+<li><p>负数取反：y &#x3D; 0010 0111 0011 1111 | 1111 1011 0111 1111</p>
+</li>
+<li><p>高16位右移：y &#x3D; 0000 0000 0000 0000 | 0010 0111 0011 1111</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 0000 0001</p>
+</li>
+<li><p>bit_16 处理：bit_16 &#x3D; y &lt;&lt; 4 &#x3D; 16  &#x2F;&#x2F;说明 x 至少需要 16 位</p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_16 &#x3D; 0000 0000 0000 0000 | 0010 0111 0011 1111</p>
+</li>
+<li><p>低 16 位中的高 8 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0010 0111</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 0001</p>
+</li>
+<li><p>bit_8 处理：bit_8 &#x3D; y &lt;&lt; 3 &#x3D; 8 &#x2F;&#x2F;说明 x 又需要 8 位</p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_8 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0010 0111</p>
+</li>
+<li><p>低 8 位的高 4 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0010</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0001</p>
+</li>
+<li><p>bit_4 处理：bit_4 &#x3D; y &lt;&lt; 2 &#x3D; 4 &#x2F;&#x2F;说明 x 又需要 4 位</p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_4 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0010</p>
+</li>
+<li><p>低 4 位的高 2 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 00</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 00</p>
+</li>
+<li><p>bit_2 处理：bit_2 &#x3D; y &lt;&lt; 1 &#x3D; 0 &#x2F;&#x2F;说明 x 这 4 位中的 1 在低 2 位中 </p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_2 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 10 &#x2F;&#x2F;不移动</p>
+</li>
+<li><p>低 2 位的高 1 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1</p>
+</li>
+<li><p>bit_1 处理：bit_1 &#x3D; y &lt;&lt; 0 &#x3D; 1 &#x2F;&#x2F;说明 x 又需要1位 </p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_1 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1 &#x2F;&#x2F;不移动</p>
+</li>
+<li><p>bit_0 处理：bit_0 &#x3D; x &#x3D; 1</p>
+</li>
+<li><p>bit_8 + bit_4 + bit_2 + bit_1 + bit_0 + 1&#x3D; 31 与正确答案符合！</p>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">howManyBits</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="type">int</span> flag = x &gt;&gt; <span class="number">31</span>;</span><br><span class="line">	x = ((~flag) &amp; x) | (flag &amp; (~x));</span><br><span class="line">	<span class="type">int</span> bit_16 = (!!(x &gt;&gt; <span class="number">16</span>)) &lt;&lt; <span class="number">4</span>; </span><br><span class="line">	x = x &gt;&gt; bit_16;</span><br><span class="line">	<span class="type">int</span> bit_8 = !!(x&gt;&gt;<span class="number">8</span>)&lt;&lt;<span class="number">3</span>;</span><br><span class="line">	x = x &gt;&gt; bit_8;</span><br><span class="line">  	<span class="type">int</span> bit_4 = !!(x &gt;&gt; <span class="number">4</span>) &lt;&lt; <span class="number">2</span>;</span><br><span class="line">  	x = x &gt;&gt; bit_4;</span><br><span class="line">  	<span class="type">int</span> bit_2 = !!(x &gt;&gt; <span class="number">2</span>) &lt;&lt; <span class="number">1</span>;</span><br><span class="line">  	x = x &gt;&gt; bit_2;</span><br><span class="line">  	<span class="type">int</span> bit_1 = !!(x &gt;&gt; <span class="number">1</span>);</span><br><span class="line">  	x = x &gt;&gt; bit_1;</span><br><span class="line">  	<span class="type">int</span> bit_0 = x;</span><br><span class="line">  	<span class="keyword">return</span> bit_16+bit_8+bit_4+bit_2+bit_1+bit_0+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="Problem-float"><a href="#Problem-float" class="headerlink" title="Problem-float"></a>Problem-float</h1><h2 id="floatScale2"><a href="#floatScale2" class="headerlink" title="floatScale2"></a>floatScale2</h2><ul>
+<li>floatScale2 - Return bit-level equivalent of expression 2*f for</li>
+<li>floating point argument f.</li>
+<li>Both the argument and result are passed as unsigned int’s, but</li>
+<li>they are to be interpreted as the bit-level representation of</li>
+<li>single-precision floating point values.</li>
+<li>When argument is NaN, return argument</li>
+<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. also if, while</li>
+<li>Max ops: 30</li>
+</ul>
+<p>先分别取符号 s，尾数 frac，和阶码 exp</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line"><span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line"><span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>非规格化的</p>
+<p>此时，exp &#x3D;&#x3D; 0，由于此时 frac 就是尾码，直接 frac &lt;&lt; 1 即可</p>
+</li>
+<li><p>规格化的 </p>
+<p>此时，exp!&#x3D;0 &amp;&amp; ！&#x3D;255，exp ++即可</p>
+</li>
+<li><p>特殊值</p>
+<p>根据题目要求，返回 uf</p>
+</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="title function_">floatScale2</span><span class="params">(<span class="type">unsigned</span> uf)</span> &#123;</span><br><span class="line">	<span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line">	<span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br><span class="line">	<span class="comment">//NaN</span></span><br><span class="line">	<span class="keyword">if</span>(<span class="built_in">exp</span> == <span class="number">0xFF</span>) </span><br><span class="line">		<span class="keyword">return</span> uf;</span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(<span class="built_in">exp</span> == <span class="number">0</span>)&#123;</span><br><span class="line">		frac &lt;&lt;= <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">return</span> (s &lt;&lt; <span class="number">31</span>) | (<span class="built_in">exp</span> &lt;&lt; <span class="number">23</span>) | frac;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//else</span></span><br><span class="line">	<span class="built_in">exp</span>++;</span><br><span class="line">	<span class="keyword">return</span> (s &lt;&lt; <span class="number">31</span>) | (<span class="built_in">exp</span> &lt;&lt; <span class="number">23</span>) | frac;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="floatFloat2Int"><a href="#floatFloat2Int" class="headerlink" title="floatFloat2Int"></a>floatFloat2Int</h2><ul>
+<li>floatFloat2Int - Return bit-level equivalent of expression (int) f</li>
+<li>for floating point argument f.</li>
+<li>Argument is passed as unsigned int, but</li>
+<li>it is to be interpreted as the bit-level representation of a</li>
+<li>single-precision floating point value.</li>
+<li>Anything out of range (including NaN and infinity) should return0x80000000u.</li>
+<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. also if, while</li>
+<li>Max ops: 30</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220211212931907.png" alt="iEEE"></p>
+<p>与上题一样，先取符号 s，尾数 frac，和阶码 exp</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line"><span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line"><span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>非规格化的</p>
+<p>此时，exp &#x3D;&#x3D; 0，而 E &#x3D; 1 - Bias &#x3D; 1 - 127 &#x3D; -126, M &lt; 1。显然，return 0</p>
+</li>
+<li><p>规格化的 </p>
+<p>此时，exp!&#x3D;0 &amp;&amp; exp！&#x3D;255。我们把 frac 作为基数进行修改，最后返回 frac 。首先由于这是规格化的，所以要加上开头的“1”。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> E = <span class="built_in">exp</span> - <span class="number">127</span>;</span><br><span class="line">frac = frac | (<span class="number">1</span> &lt;&lt; <span class="number">23</span>);</span><br></pre></td></tr></table></figure>
+
+<p>$$<br>V &#x3D; (-1)^s\times M\times2^E<br>$$</p>
+<ul>
+<li><p>当 E &lt; 0 时，显然 V &lt; 1, return 0</p>
+</li>
+<li><p>frac 为 23 位，若 E &gt; 23, 则进行加权时，能在 frac 的末尾添加 (E - 23) 个 0</p>
+</li>
+<li><p>若 E &lt; 23, 则 frac 末尾的 (23 - E)个数无法保留</p>
+</li>
+<li><p>若 E &gt;&#x3D; 31, 显然为 infinity ，return 0x80000000u</p>
+</li>
+</ul>
+</li>
+<li><p>特殊值 exp &#x3D;&#x3D; 0xFF, return  0x80000000u</p>
+</li>
+<li><p>还要注意考虑负数的情况，根据 s 的值进行判断，最后利用我们前面用到的取负技巧即可。</p>
+</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">floatFloat2Int</span><span class="params">(<span class="type">unsigned</span> uf)</span> &#123;</span><br><span class="line">	<span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line">	<span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br><span class="line">	<span class="type">int</span> E = <span class="built_in">exp</span> - <span class="number">127</span>;</span><br><span class="line">	frac = frac | (<span class="number">1</span> &lt;&lt; <span class="number">23</span>);</span><br><span class="line">	<span class="keyword">if</span>(E &lt; <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(E &gt;= <span class="number">31</span>) <span class="keyword">return</span> <span class="number">0x1</span> &lt;&lt; <span class="number">31</span>;</span><br><span class="line">	<span class="keyword">else</span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(E&lt;<span class="number">23</span>) &#123;</span><br><span class="line">            frac&gt;&gt;=(<span class="number">23</span> - E);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            frac &lt;&lt;= (E - <span class="number">23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (s)</span><br><span class="line">        <span class="keyword">return</span> ~frac + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> frac;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="floatPower2"><a href="#floatPower2" class="headerlink" title="floatPower2"></a>floatPower2</h2><ul>
+<li>floatPower2 - Return bit-level equivalent of the expression 2.0^x</li>
+<li>(2.0 raised to the power x) for any 32-bit integer x.</li>
+<li>The unsigned value that is returned should have the identical bit</li>
+<li>representation as the single-precision floating-point number 2.0^x.</li>
+<li>If the result is too small to be represented as a denorm, return 0</li>
+<li>If too large, return +INF.</li>
+<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. Also if, while </li>
+<li>Max ops: 30</li>
+</ul>
+<p>要做这道题，首先要导出浮点数非规格化和规格化分别表示的浮点数的范围。</p>
+<ol>
+<li><p>非规格化的</p>
+<p>此时，E &#x3D; 1 - Bias &#x3D; 1 - 127 &#x3D; -126, 而$M_{min} &#x3D; 0.00\dots1 &#x3D; 2^{-23}$, 所以非规格化浮点最小为 $2^{-23}\times 2^{-126} &#x3D; 2^{-149}$, $M_{max}&#x3D;2^{-1}+2^{-2}+\dots +2^{-23} &#x3D; 1-2^{-23}$, 所以非规格化浮点最大为 $2^{-126}\times (1-2^{-23})$</p>
+</li>
+<li><p>规格化的</p>
+<p>$M_{min} &#x3D; 1$,  $E_{min} &#x3D; 1-127&#x3D;-126$ 所以规格化的最小为$2^{-126}$</p>
+<p>$M_{max}&#x3D;1.11\dots11$, $E_{MINT}&#x3D;1111\quad1110&#x3D;2^{127}$ 所以规格化最大为不到$2^{128}$</p>
+</li>
+</ol>
+<p>可得下表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">格式</th>
+<th align="center">最小值</th>
+<th align="center">最大值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">规格化</td>
+<td align="center">$2^{-126}$</td>
+<td align="center">$2^{127}\times (2-2^{-23})$</td>
+</tr>
+<tr>
+<td align="center">非规格化</td>
+<td align="center">$2^{-149}$</td>
+<td align="center">$2^{-126}\times (1-2^{-23})$</td>
+</tr>
+</tbody></table>
+<p>所以：</p>
+<ul>
+<li>x &gt; 127 时，返回 Nan</li>
+<li>x &lt;&#x3D; -149时，返回 0</li>
+<li>-126&lt;&#x3D; x &lt;&#x3D;127 时，为规格化的。直接让尾码为全0，控制阶码即可，由 x &#x3D; expr - bias &#x3D;&gt; exp &#x3D; x + 127</li>
+<li>-149 &lt; x &lt; -126 时，为非规格化的，阶码值为 E &#x3D; 1 - bias &#x3D; -126。这时候只能通过控制尾码来计算。由</li>
+</ul>
+<p>$$<br>M\times2^{-126}&#x3D;2^x<br>$$</p>
+<p>知尾码的值是二次幂的形式，所以，尾码的值一定是通过一个“1”左移得到的。尾码各位以2的次幂形式的权值如下</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/v2-833086860fc45c1b4d6a75121185efdd_720w.jpg" alt="img"></p>
+<p>设1左移n位，则 x+126 &#x3D; -(23 - n)，得 n &#x3D; x + 149</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="title function_">floatPower2</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">if</span>(x &lt; <span class="number">-149</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(x &lt; <span class="number">-126</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span> &lt;&lt; (x + <span class="number">149</span>);</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(x &lt;= <span class="number">127</span>)</span><br><span class="line">		<span class="keyword">return</span> (x + <span class="number">127</span>) &lt;&lt; <span class="number">23</span>;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		<span class="keyword">return</span> (<span class="number">0xFF</span>) &lt;&lt; <span class="number">23</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="完结纪念："><a href="#完结纪念：" class="headerlink" title="完结纪念："></a>完结纪念：</h1><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220211234650758.png" alt="btest"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>DataLab 让我了解到我有多么菜。看似简单的数据操作，想要在有限的条件下写得天衣无缝需要敏锐的观察力以及强大的逻辑思维能力。</li>
+<li>本实验耗时5天，约7小时。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>CSAPP Lab</category>
+      </categories>
+      <tags>
+        <tag>计算机科学</tag>
+      </tags>
+  </entry>
+</search>
