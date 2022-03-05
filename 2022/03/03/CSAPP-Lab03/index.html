@@ -22,30 +22,49 @@
     var CONFIG = {"hostname":"deconx.top","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":-1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="天行健，君子以自强不息">
-<meta property="og:type" content="website">
-<meta property="og:title" content="潜龙勿用">
-<meta property="og:url" content="https://deconx.top/index.html">
+  <meta name="description" content="纸上得来终觉浅，绝知此事要躬行  实验概览Attack！，成为一名黑客不正是我小时候的梦想吗？这个实验一定会很有趣。 CMU 对本实验的官方说明文档：http:&#x2F;&#x2F;csapp.cs.cmu.edu&#x2F;3e&#x2F;attacklab.pdf，按照 CMU 的文档一步步往下走就可以了。  Part 1: Code Injection Attacks在第一部分中，我们要攻击的是ctarget。利用缓冲区溢出，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CSAPP-Lab02 Attack Lab 记录">
+<meta property="og:url" content="https://deconx.top/2022/03/03/CSAPP-Lab03/index.html">
 <meta property="og:site_name" content="潜龙勿用">
-<meta property="og:description" content="天行健，君子以自强不息">
+<meta property="og:description" content="纸上得来终觉浅，绝知此事要躬行  实验概览Attack！，成为一名黑客不正是我小时候的梦想吗？这个实验一定会很有趣。 CMU 对本实验的官方说明文档：http:&#x2F;&#x2F;csapp.cs.cmu.edu&#x2F;3e&#x2F;attacklab.pdf，按照 CMU 的文档一步步往下走就可以了。  Part 1: Code Injection Attacks在第一部分中，我们要攻击的是ctarget。利用缓冲区溢出，">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220303225536519.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305095612188.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220304093523423.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220304175128141.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305095954954.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220304233752252.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305094755965.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305101326911.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305102649568.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305141735521.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305135105263.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305153502546.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305161143538.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305192432219.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305193301330.png">
+<meta property="article:published_time" content="2022-03-03T08:28:24.000Z">
+<meta property="article:modified_time" content="2022-03-05T12:45:03.063Z">
 <meta property="article:author" content="西门吹水">
+<meta property="article:tag" content="计算机科学">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220303225536519.png">
 
-<link rel="canonical" href="https://deconx.top/">
+<link rel="canonical" href="https://deconx.top/2022/03/03/CSAPP-Lab03/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>潜龙勿用</title>
+  <title>CSAPP-Lab02 Attack Lab 记录 | 潜龙勿用</title>
   
 
 
@@ -194,9 +213,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
+
+    
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -212,10 +232,9 @@
       <meta itemprop="name" content="潜龙勿用">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/03/03/CSAPP-Lab03/" class="post-title-link" itemprop="url">CSAPP-Lab02 Attack Lab 记录</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          CSAPP-Lab02 Attack Lab 记录
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -268,7 +287,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
+        <blockquote>
 <p>纸上得来终觉浅，绝知此事要躬行</p>
 </blockquote>
 <h1 id="实验概览"><a href="#实验概览" class="headerlink" title="实验概览"></a>实验概览</h1><p>Attack！，成为一名黑客不正是我小时候的梦想吗？这个实验一定会很有趣。</p>
@@ -495,521 +514,71 @@
 <li>本实验耗时2天，约9小时</li>
 </ul>
 
-      
     </div>
 
     
     
     
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
       
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/02/22/gdb/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/panda.jpg">
-      <meta itemprop="name" content="西门吹水">
-      <meta itemprop="description" content="天行健，君子以自强不息">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="潜龙勿用">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/02/22/gdb/" class="post-title-link" itemprop="url">GDB 调试器的使用</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-02-22 23:07:33" itemprop="dateCreated datePublished" datetime="2022-02-22T23:07:33+08:00">2022-02-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-02-25 14:20:43" itemprop="dateModified" datetime="2022-02-25T14:20:43+08:00">2022-02-25</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="西门吹水 微信支付">
+        <p>微信支付</p>
+      </div>
       
-          <p><strong>本文只列出与BombLab实验相关的部分指令</strong></p>
-<h2 id="基本信息查看"><a href="#基本信息查看" class="headerlink" title="基本信息查看"></a>基本信息查看</h2><h3 id="栈信息"><a href="#栈信息" class="headerlink" title="栈信息"></a>栈信息</h3><p>不管是操作转储文件还是用GDB设置断点进行调试，都可以输入 (gdb)bt 打印栈内容进行查看。一般的宕机BUG，看下宕机的位置，然后看下源代码基本就可以解决了。但是很多情况下简单的 (gdb)bt 还查不到问题，这时候就要涉及到比较复杂的操作。下面罗列了一些对栈的操作：</p>
-<ul>
-<li><code>(gdb) bt</code>：显示所有栈帧</li>
-<li><code>(gdb) bt 10</code>：显示前面10个栈帧</li>
-<li><code>(gdb) bt -10</code>：显示后面10个栈帧</li>
-<li><code>(gdb) bt full</code>：显示栈帧以及局部变量</li>
-<li><code>(gdb) bt full 10</code>：显示前面10个栈帧以及局部变量
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/02/22/gdb/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="西门吹水 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
         
-      
-    </div>
 
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/02/22/CSAPP-Lab02/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/panda.jpg">
-      <meta itemprop="name" content="西门吹水">
-      <meta itemprop="description" content="天行健，君子以自强不息">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="潜龙勿用">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/02/22/CSAPP-Lab02/" class="post-title-link" itemprop="url">CSAPP-Lab02 Bomb Lab 记录</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-02-22 20:19:01" itemprop="dateCreated datePublished" datetime="2022-02-22T20:19:01+08:00">2022-02-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-03 22:56:12" itemprop="dateModified" datetime="2022-03-03T22:56:12+08:00">2022-03-03</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/CSAPP-Lab/" itemprop="url" rel="index"><span itemprop="name">CSAPP Lab</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>25k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>23 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>GDB的全称是：GNU symbolic debugger。在做实验之前，了解常见的GDB命令是必不可少的。常见GDB命令可以访问：<a href="https://deconx.top/2022/02/22/gdb/">https://deconx.top/2022/02/22/gdb/</a></p>
-</blockquote>
-<h1 id="实验概览"><a href="#实验概览" class="headerlink" title="实验概览"></a>实验概览</h1><p><code>BombLab</code>提供给我们的文件非常简单，只有一个编译不了的C文件<code>bomb.c</code>，和一个目标代码文件<code>bomb</code>。当运行<code>bomb</code>文件时，它会要求输入6个字符串，如果其中的任何一句是错的，炸弹就会“爆炸”。我们必须利用反汇编工具逆向分析这个文件，并找到这6个字符串，从而“拆除”炸弹。</p>
-<p><strong>这个实验看起来就非常有趣！</strong></p>
-<p>运行一下<code>bomb</code>文件：
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/02/22/CSAPP-Lab02/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/02/10/CSAPP-Lab01/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/panda.jpg">
-      <meta itemprop="name" content="西门吹水">
-      <meta itemprop="description" content="天行健，君子以自强不息">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="潜龙勿用">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/02/10/CSAPP-Lab01/" class="post-title-link" itemprop="url">CSAPP-Lab01 Data Lab 记录</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-02-10 17:15:14" itemprop="dateCreated datePublished" datetime="2022-02-10T17:15:14+08:00">2022-02-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-03 22:56:47" itemprop="dateModified" datetime="2022-03-03T22:56:47+08:00">2022-03-03</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/CSAPP-Lab/" itemprop="url" rel="index"><span itemprop="name">CSAPP Lab</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>11k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>10 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h1><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/20200409205146245.png" alt="题目列表"></p>
-<h1 id="Problem-int"><a href="#Problem-int" class="headerlink" title="Problem-int"></a>Problem-int</h1><h2 id="bitXor"><a href="#bitXor" class="headerlink" title="bitXor"></a>bitXor</h2><ul>
-<li>bitXor - x^y using only ~ and &amp; </li>
-<li>Example: bitXor(4, 5) &#x3D; 1</li>
-<li>Legal ops: ~ &amp;</li>
-<li>Max ops: 14</li>
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>西门吹水
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://deconx.top/2022/03/03/CSAPP-Lab03/" title="CSAPP-Lab02 Attack Lab 记录">https://deconx.top/2022/03/03/CSAPP-Lab03/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
 </ul>
-<p>要求只用“非”和“与”来表示“异或”。首先想到“异或的非&#x3D;同或”：
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/02/10/CSAPP-Lab01/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
+</div>
 
-    
-    
-    
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/02/10/01-Python%E9%81%97%E4%BC%A0%E7%AE%97%E6%B3%95%E5%AE%9E%E4%BE%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/panda.jpg">
-      <meta itemprop="name" content="西门吹水">
-      <meta itemprop="description" content="天行健，君子以自强不息">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="潜龙勿用">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/02/10/01-Python%E9%81%97%E4%BC%A0%E7%AE%97%E6%B3%95%E5%AE%9E%E4%BE%8B/" class="post-title-link" itemprop="url">01 Python遗传算法实例</a>
-        </h2>
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 计算机科学</a>
+          </div>
 
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-02-10 12:14:57" itemprop="dateCreated datePublished" datetime="2022-02-10T12:14:57+08:00">2022-02-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-02-20 12:58:59" itemprop="dateModified" datetime="2022-02-20T12:58:59+08:00">2022-02-20</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E5%AD%A6%E5%BB%BA%E6%A8%A1/" itemprop="url" rel="index"><span itemprop="name">数学建模</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.5k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><ul>
-<li>在一个长度为 n 的数组 nums 中选择 10 个元素，使得 10 个元素的和与原数组的所有元素之和的 1&#x2F;10 无限接近</li>
-<li>如 n &#x3D; 50,  sum(nums) &#x3D; 1000, 选择的元素列表 answer 要满足 |sum(answer) - 100| &lt; e, e尽可能小</li>
-</ul>
-<h2 id="求解过程"><a href="#求解过程" class="headerlink" title="求解过程"></a>求解过程</h2><h3 id="创建随机解集"><a href="#创建随机解集" class="headerlink" title="创建随机解集"></a>创建随机解集</h3><ul>
-<li>创建包含 100 个解的初始解集</li>
-<li>def creat_answer()
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/02/10/01-Python%E9%81%97%E4%BC%A0%E7%AE%97%E6%B3%95%E5%AE%9E%E4%BE%8B/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
-    </div>
 
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/02/22/gdb/" rel="prev" title="GDB 调试器的使用">
+      <i class="fa fa-chevron-left"></i> GDB 调试器的使用
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
       </footer>
+    
   </article>
   
   
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/02/08/%E6%B5%8B%E8%AF%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/panda.jpg">
-      <meta itemprop="name" content="西门吹水">
-      <meta itemprop="description" content="天行健，君子以自强不息">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="潜龙勿用">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/02/08/%E6%B5%8B%E8%AF%95/" class="post-title-link" itemprop="url">测试</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-02-08 21:37:28" itemprop="dateCreated datePublished" datetime="2022-02-08T21:37:28+08:00">2022-02-08</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-02-10 21:10:51" itemprop="dateModified" datetime="2022-02-10T21:10:51+08:00">2022-02-10</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%85%B3%E4%BA%8E%E5%BB%BA%E7%AB%99/" itemprop="url" rel="index"><span itemprop="name">关于建站</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.3k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="图片测试"><a href="#图片测试" class="headerlink" title="图片测试"></a>图片测试</h2><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220206213723103.png" alt="git bash">
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/02/08/%E6%B5%8B%E8%AF%95/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-
   
 
 
@@ -1062,6 +631,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">实验概览</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-1-Code-Injection-Attacks"><span class="nav-number">2.</span> <span class="nav-text">Part 1: Code Injection Attacks</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Phase-1"><span class="nav-number">2.1.</span> <span class="nav-text">Phase 1</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">2.1.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E6%B1%87%E7%BC%96test"><span class="nav-number">2.1.2.</span> <span class="nav-text">反汇编test</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E6%B1%87%E7%BC%96getbuf"><span class="nav-number">2.1.3.</span> <span class="nav-text">反汇编getbuf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Solution"><span class="nav-number">2.1.4.</span> <span class="nav-text">Solution</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Phase-2"><span class="nav-number">2.2.</span> <span class="nav-text">Phase 2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E5%85%A5%E4%BB%A3%E7%A0%81"><span class="nav-number">2.2.2.</span> <span class="nav-text">注入代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%88%E5%B8%A7%E8%AE%B2%E8%A7%A3"><span class="nav-number">2.2.3.</span> <span class="nav-text">栈帧讲解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Solution-1"><span class="nav-number">2.2.4.</span> <span class="nav-text">Solution</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Phase-3"><span class="nav-number">2.3.</span> <span class="nav-text">Phase 3</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E5%85%A5%E4%BB%A3%E7%A0%81-1"><span class="nav-number">2.3.2.</span> <span class="nav-text">注入代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%88%E5%B8%A7%E8%AE%B2%E8%A7%A3-1"><span class="nav-number">2.3.3.</span> <span class="nav-text">栈帧讲解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Solution-2"><span class="nav-number">2.3.4.</span> <span class="nav-text">Solution</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-2-Return-Oriented-Programming"><span class="nav-number">3.</span> <span class="nav-text">Part 2: Return-Oriented Programming</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Phase-4"><span class="nav-number">3.1.</span> <span class="nav-text">Phase 4</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90-3"><span class="nav-number">3.1.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%88%E5%B8%A7%E8%AE%B2%E8%A7%A3-2"><span class="nav-number">3.1.2.</span> <span class="nav-text">栈帧讲解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Solution-3"><span class="nav-number">3.1.3.</span> <span class="nav-text">Solution</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Phase-5"><span class="nav-number">3.2.</span> <span class="nav-text">Phase 5</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90-4"><span class="nav-number">3.2.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%88%E5%B8%A7%E8%AE%B2%E8%A7%A3-3"><span class="nav-number">3.2.2.</span> <span class="nav-text">栈帧讲解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Solution-4"><span class="nav-number">3.2.3.</span> <span class="nav-text">Solution</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

