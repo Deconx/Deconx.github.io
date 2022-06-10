@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/tiger.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/tiger.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/tiger.svg">
+  <link rel="mask-icon" href="/images/tiger.svg" color="#222">
+  <link rel="manifest" href="/images/tiger.svg">
+  <meta name="msapplication-config" content="/images/tiger.svg">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"deconx.top","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":-1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="实验概览Web Proxy 是 Web 浏览器和服务器之间的一个中间程序。我们日常使用浏览器访问某个网站时，浏览器不是直接请求服务器来获取内容的，而是联系 Proxy，Proxy 转发请求到服务器，服务器回复 Proxy 后，Proxy 再将回复发送到浏览器。 即原来的客户端-服务器是这样：  加了 Proxy 变成这样  本实验就是要实现一个支持多线程带缓存的 Web 代理，分为三个部分来进行：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CSAPP-Lab09 Proxy Lab 记录">
+<meta property="og:url" content="https://deconx.top/2022/04/13/CSAPP-Lab09/index.html">
+<meta property="og:site_name" content="潜龙勿用">
+<meta property="og:description" content="实验概览Web Proxy 是 Web 浏览器和服务器之间的一个中间程序。我们日常使用浏览器访问某个网站时，浏览器不是直接请求服务器来获取内容的，而是联系 Proxy，Proxy 转发请求到服务器，服务器回复 Proxy 后，Proxy 再将回复发送到浏览器。 即原来的客户端-服务器是这样：  加了 Proxy 变成这样  本实验就是要实现一个支持多线程带缓存的 Web 代理，分为三个部分来进行：">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412232840132.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412233236559.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412194849510.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413072204676.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412194347578.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412195522104.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412233611252.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413114835337.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413115833749.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413134605317.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413135058638.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413135405874.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413154457448.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413155537122.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160804023.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160832627.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413155927747.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160406236.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160538712.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160630313.png">
+<meta property="article:published_time" content="2022-04-13T13:28:24.000Z">
+<meta property="article:modified_time" content="2022-06-10T15:57:51.892Z">
+<meta property="article:author" content="西门吹水">
+<meta property="article:tag" content="计算机科学">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412232840132.png">
+
+<link rel="canonical" href="https://deconx.top/2022/04/13/CSAPP-Lab09/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CSAPP-Lab09 Proxy Lab 记录 | 潜龙勿用</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?71065cef1d4b78e896256ce80437f4e3";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">潜龙勿用</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">12</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Deconx" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/04/13/CSAPP-Lab09/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/panda.jpg">
+      <meta itemprop="name" content="西门吹水">
+      <meta itemprop="description" content="天行健，君子以自强不息">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="潜龙勿用">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CSAPP-Lab09 Proxy Lab 记录
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-13 21:28:24" itemprop="dateCreated datePublished" datetime="2022-04-13T21:28:24+08:00">2022-04-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-10 23:57:51" itemprop="dateModified" datetime="2022-06-10T23:57:51+08:00">2022-06-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CSAPP-Lab/" itemprop="url" rel="index"><span itemprop="name">CSAPP Lab</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>10 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验概览"><a href="#实验概览" class="headerlink" title="实验概览"></a>实验概览</h1><p>Web Proxy 是 Web 浏览器和服务器之间的一个中间程序。我们日常使用浏览器访问某个网站时，浏览器不是直接请求服务器来获取内容的，而是联系 Proxy，Proxy 转发请求到服务器，服务器回复 Proxy 后，Proxy 再将回复发送到浏览器。</p>
+<p>即原来的客户端-服务器是这样：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412232840132.png" alt="image-20220412232840132"></p>
+<p>加了 Proxy 变成这样</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412233236559.png" alt="image-20220412233236559"></p>
+<p>本实验就是要实现一个支持<strong>多线程带缓存</strong>的 Web 代理，分为三个部分来进行：</p>
+<ul>
+<li><strong>Part 1</strong>：实现一个最基础的顺序代理</li>
+<li><strong>Part 2</strong>：进一步优化，使代理支持多线程（生产者-消费者模型）</li>
+<li><strong>Part 3</strong>：使用 LRU 策略缓存 Web 中的对象（读者-写者模型）</li>
+</ul>
+<h1 id="TINY-Web-服务器详解"><a href="#TINY-Web-服务器详解" class="headerlink" title="TINY Web 服务器详解"></a>TINY Web 服务器详解</h1><p>代理相对于客户端来说充当了服务端的角色，相对于服务端来说又充当了客户端的角色，所以可以大量利用书中讲解服务器的代码。</p>
+<p>CSAPP 课本用 250 行代码为我们实现了一个非常简单的 Web 服务器，在做实验之前，深刻理解它是非常重要的。</p>
+<p>首先要做的事就是解析 HTTP 请求</p>
+<h2 id="解析-HTTP-请求"><a href="#解析-HTTP-请求" class="headerlink" title="解析 HTTP 请求"></a>解析 HTTP 请求</h2><p>HTTP 请求的组成是这样的：一个请求行，后面跟随零个或更多个请求报头，在跟随一个空的文本行来终止报头列表。请求行的形式是：<code>method URI version</code>，本服务器只支持 GET 方法</p>
+<p>将 URI 解析出来后，需要判断请求的是静态内容还是动态内容，分别执行。给出函数<code>doit</code></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412194849510.png" alt="image-20220412194849510"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413072204676.png" alt="image-20220413072204676"></p>
+<p>解析 URI 都是细节上的问题，这里不再分析</p>
+<h2 id="提供静态内容"><a href="#提供静态内容" class="headerlink" title="提供静态内容"></a>提供静态内容</h2><p>一个 HTTP 响应的组成是这样的：一个响应行，后面跟随着零个或更多的相应报头，再跟随着一个终止报头的空行，随后跟随响应主体，相应行的格式为<code>version status-code status-massage</code>。于是给出函数<code>serve_static</code></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412194347578.png" alt="image-20220412194347578"></p>
+<h2 id="提供动态内容"><a href="#提供动态内容" class="headerlink" title="提供动态内容"></a>提供动态内容</h2><p>TINY 派生一个子进程并在子进程的上下文中运行一个 CGI 程序</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412195522104.png" alt="image-20220412195522104"></p>
+<h2 id="主函数"><a href="#主函数" class="headerlink" title="主函数"></a>主函数</h2><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220412233611252.png" alt="image-20220412233611252"></p>
+<h1 id="Part-1-Implementing-A-sequential-web-proxy"><a href="#Part-1-Implementing-A-sequential-web-proxy" class="headerlink" title="Part 1: Implementing A sequential web proxy"></a>Part 1: Implementing A sequential web proxy</h1><p>要求：</p>
+<ul>
+<li><p>实现一个处理 HTTP&#x2F;1.0 GET 请求的基本顺序 web 代理</p>
+</li>
+<li><p>如果接收到一个浏览器请求为 HTTP&#x2F;1.1 版本，则应将它作为 HTTP&#x2F;1.0 请求转发</p>
+</li>
+<li><p>转发合法的 HTTP 请求</p>
+<ul>
+<li>假设请求为 <code>GET http://www.cmu.edu/hub/index.html HTTP/1.1</code></li>
+<li>则主机名为 <code>www.cmu.edu</code></li>
+<li>请求的页面为 <code>/hub/index.html</code></li>
+<li>HTTP 请求每行以 <code>\r\n</code> 结束，以一个空行 <code>\r\n</code> 结尾</li>
+</ul>
+</li>
+<li><p>代理发送的请求的 header 为：</p>
+<ul>
+<li><p><code>Host</code>: 如 <code>Host: www.cmu.edu</code></p>
+</li>
+<li><p><code>User-Agent</code>: 如 <code>User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3</code></p>
+</li>
+<li><p><code>Connection</code>: 必须发送 <code>Connection: close</code></p>
+</li>
+<li><p><code>Proxy-Connection</code>: 必须发送 <code>Proxy-Connection: close</code></p>
+</li>
+</ul>
+</li>
+<li><p>要处理过早关闭的连接，即必须捕获 SIGPIPE 信号</p>
+</li>
+</ul>
+<p>这部分没什么好说的</p>
+<h2 id="等待客户端连接"><a href="#等待客户端连接" class="headerlink" title="等待客户端连接"></a>等待客户端连接</h2><p>首先是我们的<code>main</code>函数，不断等待客户端的连接，代码与 TINY服务器代码完全相同，不再讲解</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> listenfd, connfd;</span><br><span class="line">    <span class="type">socklen_t</span> clientlen;</span><br><span class="line">    <span class="type">char</span> hostname[MAXLINE], port[MAXLINE];</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_storage</span> <span class="title">clientaddr</span>;</span></span><br><span class="line">    <span class="keyword">if</span> (argc != <span class="number">2</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;usage :%s &lt;port&gt; \n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    signal(SIGPIPE, sigpipe_handler);	<span class="comment">//捕获SIGPIPE信号</span></span><br><span class="line">    listenfd = Open_listenfd(argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        clientlen = <span class="keyword">sizeof</span>(clientaddr);</span><br><span class="line">        connfd = Accept(listenfd, (SA *)&amp;clientaddr, &amp;clientlen);</span><br><span class="line"></span><br><span class="line">        Getnameinfo((SA *)&amp;clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, <span class="number">0</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Accepted connection from (%s %s).\n&quot;</span>, hostname, port);</span><br><span class="line"></span><br><span class="line">        doit(connfd);</span><br><span class="line">        <span class="comment">//关闭客户端的连接描述符</span></span><br><span class="line">        Close(connfd);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="转发与回复"><a href="#转发与回复" class="headerlink" title="转发与回复"></a>转发与回复</h2><p><code>doit</code>函数前半部分与 TINY 服务器相似，不同的是将后半部分的请求处理改为转发给服务器，再将服务器的回复回复给客户端</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">doit</span><span class="params">(<span class="type">int</span> connfd)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];</span><br><span class="line">    <span class="type">char</span> server[MAXLINE];</span><br><span class="line"> </span><br><span class="line">    <span class="type">rio_t</span> rio, server_rio;</span><br><span class="line"></span><br><span class="line">    Rio_readinitb(&amp;rio, connfd);</span><br><span class="line">    Rio_readlineb(&amp;rio, buf, MAXLINE);</span><br><span class="line">    <span class="built_in">sscanf</span>(buf, <span class="string">&quot;%s %s %s&quot;</span>, method, uri, version);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (strcasecmp(method, <span class="string">&quot;GET&quot;</span>))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Proxy does not implement the method&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Uri</span> *<span class="title">uri_data</span> =</span> (<span class="keyword">struct</span> Uri *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> Uri));</span><br><span class="line">    <span class="comment">//解析uri</span></span><br><span class="line">    parse_uri(uri, uri_data);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//设置header</span></span><br><span class="line">    build_header(server, uri_data, &amp;rio);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//连接服务器</span></span><br><span class="line">    <span class="type">int</span> serverfd = Open_clientfd(uri_data-&gt;host, uri_data-&gt;port);</span><br><span class="line">    <span class="keyword">if</span> (serverfd &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;connection failed\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">	<span class="comment">//转发给服务器</span></span><br><span class="line">    Rio_readinitb(&amp;server_rio, serverfd);</span><br><span class="line">    Rio_writen(serverfd, server, <span class="built_in">strlen</span>(server));</span><br><span class="line"></span><br><span class="line">    <span class="type">size_t</span> n;</span><br><span class="line">    <span class="comment">//回复给客户端</span></span><br><span class="line">    <span class="keyword">while</span> ((n = Rio_readlineb(&amp;server_rio, buf, MAXLINE)) != <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;proxy received %d bytes,then send\n&quot;</span>, (<span class="type">int</span>)n);</span><br><span class="line">        Rio_writen(connfd, buf, n);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//关闭服务器描述符</span></span><br><span class="line">    Close(serverfd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="解析uri"><a href="#解析uri" class="headerlink" title="解析uri"></a>解析uri</h2><p>根据 uri 结构定义一个结构体：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Uri</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">char</span> host[MAXLINE]; <span class="comment">//hostname</span></span><br><span class="line">    <span class="type">char</span> port[MAXLINE]; <span class="comment">//端口</span></span><br><span class="line">    <span class="type">char</span> path[MAXLINE]; <span class="comment">//路径</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>解析函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//解析uri</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">parse_uri</span><span class="params">(<span class="type">char</span> *uri, <span class="keyword">struct</span> Uri *uri_data)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> *hostpose = <span class="built_in">strstr</span>(uri, <span class="string">&quot;//&quot;</span>);</span><br><span class="line">    <span class="comment">//默认端口为80</span></span><br><span class="line">    <span class="keyword">if</span> (hostpose == <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">char</span> *pathpose = <span class="built_in">strstr</span>(uri, <span class="string">&quot;/&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (pathpose != <span class="literal">NULL</span>)</span><br><span class="line">            <span class="built_in">strcpy</span>(uri_data-&gt;path, pathpose);</span><br><span class="line">        <span class="built_in">strcpy</span>(uri_data-&gt;port, <span class="string">&quot;80&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">char</span> *portpose = <span class="built_in">strstr</span>(hostpose + <span class="number">2</span>, <span class="string">&quot;:&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (portpose != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="type">int</span> tmp;</span><br><span class="line">            <span class="built_in">sscanf</span>(portpose + <span class="number">1</span>, <span class="string">&quot;%d%s&quot;</span>, &amp;tmp, uri_data-&gt;path);</span><br><span class="line">            <span class="built_in">sprintf</span>(uri_data-&gt;port, <span class="string">&quot;%d&quot;</span>, tmp);</span><br><span class="line">            *portpose = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="type">char</span> *pathpose = <span class="built_in">strstr</span>(hostpose + <span class="number">2</span>, <span class="string">&quot;/&quot;</span>);</span><br><span class="line">            <span class="keyword">if</span> (pathpose != <span class="literal">NULL</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">strcpy</span>(uri_data-&gt;path, pathpose);</span><br><span class="line">                <span class="built_in">strcpy</span>(uri_data-&gt;port, <span class="string">&quot;80&quot;</span>);</span><br><span class="line">                *pathpose = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">strcpy</span>(uri_data-&gt;host, hostpose + <span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="测试与结果"><a href="#测试与结果" class="headerlink" title="测试与结果"></a>测试与结果</h2><p>不知道为什么，这个<code>driver.sh</code>在 wsl 上总是出问题，只好拿出我的 vm 虚拟机来跑了</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413114835337.png" alt="image-20220413114835337"></p>
+<p>40 分全部拿到！</p>
+<h1 id="Part-2-Dealing-with-multiple-concurrent-requests"><a href="#Part-2-Dealing-with-multiple-concurrent-requests" class="headerlink" title="Part 2: Dealing with multiple concurrent requests"></a>Part 2: Dealing with multiple concurrent requests</h1><p>设计多线程并发处理客户端请求，这里采用预线程化的技术，如图：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413115833749.png" alt="image-20220413115833749"></p>
+<p>这是一个生产者-消费者模型，我们回顾一下：</p>
+<h2 id="生产者-消费者模型"><a href="#生产者-消费者模型" class="headerlink" title="生产者-消费者模型"></a>生产者-消费者模型</h2><p>生产者和消费者线程共享一个有 n 个槽的优先缓冲区，生产者反复地生成新的项目，并把它们插入到缓冲区中。消费者线程不断从缓冲区中取出，这些项目然后使用它们。因为插入和取出项目都涉及更新共享变量，所以我们必须保证对缓冲区地访问是互斥的，并调度对缓冲区地访问：</p>
+<ul>
+<li>如果没有槽位：生产者必须等待</li>
+<li>如果没有项目：消费者必须等待</li>
+</ul>
+<p>在预线程化的服务器中，客户端就是生产者，不断产生连接；Proxy 就是消费者，不断选中客户端连接</p>
+<p>为此，开发一个 SBUF 包来实现这个缓冲区地调度。缓冲区设计：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="type">int</span> *buf;          <span class="comment">/* Buffer array */</span>         </span><br><span class="line">    <span class="type">int</span> n;             <span class="comment">/* Maximum number of slots */</span></span><br><span class="line">    <span class="type">int</span> front;         <span class="comment">/* buf[(front+1)%n] is first item */</span></span><br><span class="line">    <span class="type">int</span> rear;          <span class="comment">/* buf[rear%n] is last item */</span></span><br><span class="line">    <span class="type">sem_t</span> mutex;       <span class="comment">/* Protects accesses to buf */</span></span><br><span class="line">    <span class="type">sem_t</span> slots;       <span class="comment">/* Counts available slots */</span></span><br><span class="line">    <span class="type">sem_t</span> items;       <span class="comment">/* Counts available items */</span></span><br><span class="line">&#125; <span class="type">sbuf_t</span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>其中有 3 个信号量<ul>
+<li>mutex 初始化为 1，保证对缓冲区的访问是互斥的</li>
+<li>slots 初始化为 n，记录槽位</li>
+<li>items 初始化为 0，记录项目数</li>
+</ul>
+</li>
+</ul>
+<p>由此，设计客户端向缓冲区插入函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">sbuf_insert</span><span class="params">(<span class="type">sbuf_t</span> *sp, <span class="type">int</span> item)</span></span><br><span class="line">&#123;</span><br><span class="line">    P(&amp;sp-&gt;slots);                          <span class="comment">/* Wait for available slot */</span></span><br><span class="line">    P(&amp;sp-&gt;mutex);                          <span class="comment">/* Lock the buffer */</span></span><br><span class="line">    sp-&gt;buf[(++sp-&gt;rear)%(sp-&gt;n)] = item;   <span class="comment">/* Insert the item */</span></span><br><span class="line">    V(&amp;sp-&gt;mutex);                          <span class="comment">/* Unlock the buffer */</span></span><br><span class="line">    V(&amp;sp-&gt;items);                          <span class="comment">/* Announce available item */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>首先有一个对 slots 的 P 操作，保证了如果槽位已满，则客户端被挂起，不会继续往缓冲区写入请求</li>
+<li>然后是一个 mutex 的 P 操作，保证了对缓冲区互斥的访问</li>
+<li>缓冲区插入完成后，释放所有的锁</li>
+</ul>
+<p>设计 Proxy 从缓冲区读入的函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">sbuf_remove</span><span class="params">(<span class="type">sbuf_t</span> *sp)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> item;</span><br><span class="line">    P(&amp;sp-&gt;items);                          <span class="comment">/* Wait for available item */</span></span><br><span class="line">    P(&amp;sp-&gt;mutex);                          <span class="comment">/* Lock the buffer */</span></span><br><span class="line">    item = sp-&gt;buf[(++sp-&gt;front)%(sp-&gt;n)];  <span class="comment">/* Remove the item */</span></span><br><span class="line">    V(&amp;sp-&gt;mutex);                          <span class="comment">/* Unlock the buffer */</span></span><br><span class="line">    V(&amp;sp-&gt;slots);                          <span class="comment">/* Announce available slot */</span></span><br><span class="line">    <span class="keyword">return</span> item;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>首先有一个对 items 的 P 操作，保证了如果没有项目，则 Proxy 被挂起，不会继续往缓冲区读出客户端</li>
+<li>然后是一个 mutex 的 P 操作，保证了对缓冲区互斥的访问</li>
+<li>缓冲区读出完成后，释放所有的锁，返回其中一个客户端的描述符</li>
+</ul>
+<h2 id="基于预线程化的-Proxy"><a href="#基于预线程化的-Proxy" class="headerlink" title="基于预线程化的 Proxy"></a>基于预线程化的 Proxy</h2><p>大部分代码与第 1 部分一样</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> listenfd, connfd;</span><br><span class="line">    <span class="type">socklen_t</span> clientlen;</span><br><span class="line">    <span class="type">char</span> hostname[MAXLINE], port[MAXLINE];</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_storage</span> <span class="title">clientaddr</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">pthread_t</span> tid;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (argc != <span class="number">2</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;usage :%s &lt;port&gt; \n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    signal(SIGPIPE, sigpipe_handler);</span><br><span class="line">    listenfd = Open_listenfd(argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    sbuf_init(&amp;sbuf, SBUFSIZE);</span><br><span class="line">    <span class="comment">//创建工作者线程</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; NTHREADS; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Pthread_create(&amp;tid, <span class="literal">NULL</span>, thread, <span class="literal">NULL</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        clientlen = <span class="keyword">sizeof</span>(clientaddr);</span><br><span class="line">        connfd = Accept(listenfd, (SA *)&amp;clientaddr, &amp;clientlen);</span><br><span class="line">        <span class="comment">//向缓冲区写入这个描述符</span></span><br><span class="line">        sbuf_insert(&amp;sbuf, connfd);</span><br><span class="line">        Getnameinfo((SA *)&amp;clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, <span class="number">0</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Accepted connection from (%s %s).\n&quot;</span>, hostname, port);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后是线程执行函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> *<span class="title function_">thread</span><span class="params">(<span class="type">void</span> *vargp)</span></span><br><span class="line">&#123;</span><br><span class="line">    Pthread_detach(pthread_self());</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">    <span class="comment">//从缓冲区中读出描述符</span></span><br><span class="line">    <span class="type">int</span> connfd = sbuf_remove(&amp;sbuf);</span><br><span class="line">    <span class="comment">//转发</span></span><br><span class="line">    doit(connfd);</span><br><span class="line">    <span class="comment">//关闭客户端的连接描述符</span></span><br><span class="line">    Close(connfd);&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="测试与结果-1"><a href="#测试与结果-1" class="headerlink" title="测试与结果"></a>测试与结果</h2><p><strong>这里有一个大坑！</strong></p>
+<p>测试第 2 部分，总是有如下提示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Timeout waiting <span class="keyword">for</span> the server to grab the port reserved <span class="keyword">for</span> it</span><br></pre></td></tr></table></figure>
+
+<p>我一直以为是我的程序有 bug，细心阅读了好多遍。后来查看他人博客，发现是<code>driver.sh</code>文件写的有问题：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413134605317.png" alt="image-20220413134605317"></p>
+<p>这一部分，作者写了一个<code>nop-server.py</code>脚本模拟一个永远不会响应的服务器，来测试我们 Proxy 的并发性能。301 行这里应该改为：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413135058638.png" alt="image-20220413135058638"></p>
+<p>测试结果如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413135405874.png" alt="image-20220413135405874"></p>
+<p>15 分满分！</p>
+<h1 id="Part-3-Caching-web-objects"><a href="#Part-3-Caching-web-objects" class="headerlink" title="Part 3: Caching web objects"></a>Part 3: Caching web objects</h1><p>果然是万物皆可加一层 Cache。在 Proxy 中，当多个客户端或一个客户端多次访问同一个服务端的同一对象时，Proxy 每次都要从服务端请求，这是很耗费时间的。如果 Proxy 能把访问过的对象存储下来，那么再次遇到同样的请求时，就不需要再连接到服务端了，可以直接回复给客户端。而 Cache 的大小并不是无限的，所以就又要考虑替换策略，本实验要求使用 LRU。</p>
+<p>LRU 和 Cache 在 Cache Lab 中有详细的讲述。因此 Cache 的实现在这里就不再讲解了，可前往查看：</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/484657229">https://zhuanlan.zhihu.com/p/484657229</a></p>
+<p>这里主要讲解一下读者-写者模型</p>
+<h2 id="读者-写者模型"><a href="#读者-写者模型" class="headerlink" title="读者-写者模型"></a>读者-写者模型</h2><p>一组并发的线程要访问同一个共享对象时，将只读对象的线程叫做读者，只修改对象的进程叫做写者。写者必须拥有对对象的独占的访问，而读者可以与其它读者共享对象。该模型分为两类：</p>
+<ul>
+<li>读优先：要求不让读者等待</li>
+<li>写优先：要求在写者之后到达的读者必须等待</li>
+</ul>
+<p>对于读者优先，只要有其它读者，则就应让读者先读，因此设置一个 read_cnt 记录读者数量，这个变量对于读者来说也是互斥的，所以设置一个 mutex 信号量来保护，读的过程中不允许写者写，写的过程不允许读者读，所以设置 w 来保护共享对象</p>
+<p>读优先代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> read_cnt;</span><br><span class="line"><span class="type">sem_t</span> mutex, w;    <span class="comment">//都初始化为1</span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">reader</span><span class="params">(<span class="type">void</span>)</span> </span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">        P(&amp;mutex);</span><br><span class="line">        readcnt++;</span><br><span class="line">        <span class="keyword">if</span>(readcnt==<span class="number">1</span>)</span><br><span class="line">            P(&amp;w);</span><br><span class="line">        V(&amp;mutex);</span><br><span class="line">        </span><br><span class="line">        P(&amp;mutex);</span><br><span class="line">        readcnt--;</span><br><span class="line">        <span class="keyword">if</span>(readcnt==<span class="number">0</span>)</span><br><span class="line">            V(&amp;w);</span><br><span class="line">        V(&amp;mutex);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">writer</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">        P(&amp;w);</span><br><span class="line">        </span><br><span class="line">        ...</span><br><span class="line">        </span><br><span class="line">        V(&amp;w)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>只有第一个读者对 w 加锁，最后一个读者解锁。因此一旦有一个读者加锁，写者就无法访问这个共享对象了，而其它读者可以随意访问</li>
+</ul>
+<h2 id="Cache-结构"><a href="#Cache-结构" class="headerlink" title="Cache 结构"></a>Cache 结构</h2><p>在本实验中，对 Cache 的访问就是一个经典的读者-写者问题。有的线程要从 Cache 中读出，有的线程要写入 Cache。显然，为了 Proxy 更加高效，这里应该用读优先的模型。 </p>
+<p>定义如下的 Cache 结构</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Cache结构</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">char</span> obj[MAX_OBJECT_SIZE];</span><br><span class="line">    <span class="type">char</span> uri[MAXLINE];</span><br><span class="line">    <span class="type">int</span> LRU;</span><br><span class="line">    <span class="type">int</span> isEmpty;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> read_cnt; <span class="comment">//读者数量</span></span><br><span class="line">    <span class="type">sem_t</span> w;      <span class="comment">//Cache信号量</span></span><br><span class="line">    <span class="type">sem_t</span> mutex;  <span class="comment">//read_cnt信号量</span></span><br><span class="line"></span><br><span class="line">&#125; block;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    block data[MAX_CACHE];</span><br><span class="line">    <span class="type">int</span> num;</span><br><span class="line">&#125; Cache;</span><br></pre></td></tr></table></figure>
+
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>在<code>doit</code>函数中，得到一个请求后，先根据 uri 判断 Cache 中是否存在这个内容，如果存在，则直接回复；如果不存在，则连接服务器，回复结束后，把内容写进 Cache</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">doit</span><span class="params">(<span class="type">int</span> connfd)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];</span><br><span class="line">    <span class="type">char</span> server[MAXLINE];</span><br><span class="line"></span><br><span class="line">    <span class="type">rio_t</span> rio, server_rio;</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> cache_tag[MAXLINE];</span><br><span class="line">    Rio_readinitb(&amp;rio, connfd);</span><br><span class="line">    Rio_readlineb(&amp;rio, buf, MAXLINE);</span><br><span class="line">    <span class="built_in">sscanf</span>(buf, <span class="string">&quot;%s %s %s&quot;</span>, method, uri, version);</span><br><span class="line">    <span class="built_in">strcpy</span>(cache_tag, uri);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (strcasecmp(method, <span class="string">&quot;GET&quot;</span>))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Proxy does not implement the method&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Uri</span> *<span class="title">uri_data</span> =</span> (<span class="keyword">struct</span> Uri *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> Uri));</span><br><span class="line">    <span class="comment">//判断uri是否缓存，若缓存，直接回复</span></span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line">    <span class="keyword">if</span> ((i = get_Cache(cache_tag)) != <span class="number">-1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//加锁</span></span><br><span class="line">        P(&amp;cache.data[i].mutex);</span><br><span class="line">        cache.data[i].read_cnt++;</span><br><span class="line">        <span class="keyword">if</span> (cache.data[i].read_cnt == <span class="number">1</span>)</span><br><span class="line">            P(&amp;cache.data[i].w);</span><br><span class="line">        V(&amp;cache.data[i].mutex);</span><br><span class="line"></span><br><span class="line">        Rio_writen(connfd, cache.data[i].obj, <span class="built_in">strlen</span>(cache.data[i].obj));</span><br><span class="line"></span><br><span class="line">        P(&amp;cache.data[i].mutex);</span><br><span class="line">        cache.data[i].read_cnt--;</span><br><span class="line">        <span class="keyword">if</span> (cache.data[i].read_cnt == <span class="number">0</span>)</span><br><span class="line">            V(&amp;cache.data[i].w);</span><br><span class="line">        V(&amp;cache.data[i].mutex);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//解析uri</span></span><br><span class="line">    parse_uri(uri, uri_data);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//设置header</span></span><br><span class="line">    build_header(server, uri_data, &amp;rio);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//连接服务器</span></span><br><span class="line">    <span class="type">int</span> serverfd = Open_clientfd(uri_data-&gt;host, uri_data-&gt;port);</span><br><span class="line">    <span class="keyword">if</span> (serverfd &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;connection failed\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Rio_readinitb(&amp;server_rio, serverfd);</span><br><span class="line">    Rio_writen(serverfd, server, <span class="built_in">strlen</span>(server));</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> cache_buf[MAX_OBJECT_SIZE];</span><br><span class="line">    <span class="type">int</span> size_buf = <span class="number">0</span>;</span><br><span class="line">    <span class="type">size_t</span> n;</span><br><span class="line">    <span class="keyword">while</span> ((n = Rio_readlineb(&amp;server_rio, buf, MAXLINE)) != <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//注意判断是否会超出缓存大小</span></span><br><span class="line">        size_buf += n;</span><br><span class="line">        <span class="keyword">if</span>(size_buf &lt; MAX_OBJECT_SIZE)</span><br><span class="line">            <span class="built_in">strcat</span>(cache_buf, buf);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;proxy received %d bytes,then send\n&quot;</span>, (<span class="type">int</span>)n);</span><br><span class="line">        Rio_writen(connfd, buf, n);</span><br><span class="line">    &#125;</span><br><span class="line">    Close(serverfd);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span>(size_buf &lt; MAX_OBJECT_SIZE)&#123;</span><br><span class="line">        write_Cache(cache_tag, cache_buf);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>要注意，每次读写缓存时，都要加相应的锁</li>
+</ul>
+<p>Cache 以及 LRU 具体实现的代码，请前往我的 Cache Lab 解析查看，这里就不再讲解了。</p>
+<h2 id="测试与结果-2"><a href="#测试与结果-2" class="headerlink" title="测试与结果"></a>测试与结果</h2><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413154457448.png" alt="image-20220413154457448"></p>
+<p>满分！</p>
+<h1 id="FireFox-实战测试"><a href="#FireFox-实战测试" class="headerlink" title="FireFox 实战测试"></a>FireFox 实战测试</h1><p>首先打开 Proxy，监听 15213 端口</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413155537122.png" alt="image-20220413155537122"></p>
+<p>配置火狐的代理设置：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160804023.png" alt="image-20220413160804023"></p>
+<p>随便打开百度试试</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160832627.png" alt="image-20220413160832627"></p>
+<p>不出意外，没有连接成功。查看一下 Proxy 打印的信息</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413155927747.png" alt="image-20220413155927747"></p>
+<p>是因为请求的都不是 GET 方法</p>
+<p>那就只好访问一下 TINY 服务器试试了，先打开服务器，设置端口为 15214</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160406236.png" alt="image-20220413160406236"></p>
+<p>FireFox 访问：<code>localhost: 15214</code></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160538712.png" alt="image-20220413160538712"></p>
+<p>访问成功了！甚至显示出了哥斯拉！</p>
+<p>Proxy 打印出一些转发信息：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220413160630313.png" alt="image-20220413160630313"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>我做这个实验感受非常痛苦。原因在于 CSAPP 的后三章讲得太简略了，对于我这种没有学过操作系统与计算机网络的人来说，弄懂它们是很艰难的。比如，从信号量的 P、V 操作到读者-写者模型就花费了我半天来理解</li>
+<li>当然，完成实验也是成就感满满。尤其是最后打开 FireFox，连接上 TINY ，看到哥斯拉跳出来的那一刻，一种无与伦比的喜悦由内而外迸发，一切辛苦都值得了。</li>
+<li>这个实验还会继续更新的，希望有一天能用它访问所有的网页</li>
+<li>本实验耗时 2 天，约 16 小时</li>
+</ul>
+<h1 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h1><p>课本早已在上周就读完了，而这也是 CSAPP 的最后一个实验</p>
+<p>至此，CSAPP 的学习算是告一段落了。可以说， CSAPP 是我计算机的启蒙教材，真正为我打开了计算机领域的大门，往后，我将以它为纲，往更深处学习</p>
+<p>还有更深的感想与总结等有时间了再单开一篇文章写吧</p>
+<p>最后，以侯捷老师的一段话结束我这三个月的冒险之旅</p>
+<blockquote>
+<p>作为一个好的学习者，背景不是重点，重要的是，你是否具备正确的学习态度，起步固然可以从轻松小品开始，但如果碰上大部头巨著就退避三舍、逃之夭夭，面对任何技术只求快餐速成，学语言却从来不写程序，那就绝对没有成为高手乃至专家的一天。<br>有些人学习，自练就一身钢筋铁骨，可以在热带丛林中披荆斩棘，在莽莽草原中追奔逐北。有些人的学习，既未习惯大部头书，也为习惯严谨格调，更未习惯自修勤学，是温室里的一朵花，没有自立自强的本钱。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="西门吹水 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="西门吹水 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>西门吹水
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://deconx.top/2022/04/13/CSAPP-Lab09/" title="CSAPP-Lab09 Proxy Lab 记录">https://deconx.top/2022/04/13/CSAPP-Lab09/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 计算机科学</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/11/CSAPP-Lab08/" rel="prev" title="CSAPP-Lab08 Malloc Lab 记录">
+      <i class="fa fa-chevron-left"></i> CSAPP-Lab08 Malloc Lab 记录
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">实验概览</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TINY-Web-%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%AF%A6%E8%A7%A3"><span class="nav-number">2.</span> <span class="nav-text">TINY Web 服务器详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90-HTTP-%E8%AF%B7%E6%B1%82"><span class="nav-number">2.1.</span> <span class="nav-text">解析 HTTP 请求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E4%BE%9B%E9%9D%99%E6%80%81%E5%86%85%E5%AE%B9"><span class="nav-number">2.2.</span> <span class="nav-text">提供静态内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E4%BE%9B%E5%8A%A8%E6%80%81%E5%86%85%E5%AE%B9"><span class="nav-number">2.3.</span> <span class="nav-text">提供动态内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%87%BD%E6%95%B0"><span class="nav-number">2.4.</span> <span class="nav-text">主函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-1-Implementing-A-sequential-web-proxy"><span class="nav-number">3.</span> <span class="nav-text">Part 1: Implementing A sequential web proxy</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AD%89%E5%BE%85%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%BF%9E%E6%8E%A5"><span class="nav-number">3.1.</span> <span class="nav-text">等待客户端连接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AC%E5%8F%91%E4%B8%8E%E5%9B%9E%E5%A4%8D"><span class="nav-number">3.2.</span> <span class="nav-text">转发与回复</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90uri"><span class="nav-number">3.3.</span> <span class="nav-text">解析uri</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%B8%8E%E7%BB%93%E6%9E%9C"><span class="nav-number">3.4.</span> <span class="nav-text">测试与结果</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-2-Dealing-with-multiple-concurrent-requests"><span class="nav-number">4.</span> <span class="nav-text">Part 2: Dealing with multiple concurrent requests</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85-%E6%B6%88%E8%B4%B9%E8%80%85%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.1.</span> <span class="nav-text">生产者-消费者模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E9%A2%84%E7%BA%BF%E7%A8%8B%E5%8C%96%E7%9A%84-Proxy"><span class="nav-number">4.2.</span> <span class="nav-text">基于预线程化的 Proxy</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%B8%8E%E7%BB%93%E6%9E%9C-1"><span class="nav-number">4.3.</span> <span class="nav-text">测试与结果</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-3-Caching-web-objects"><span class="nav-number">5.</span> <span class="nav-text">Part 3: Caching web objects</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E8%80%85-%E5%86%99%E8%80%85%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.1.</span> <span class="nav-text">读者-写者模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cache-%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">Cache 结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">5.3.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%B8%8E%E7%BB%93%E6%9E%9C-2"><span class="nav-number">5.4.</span> <span class="nav-text">测试与结果</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#FireFox-%E5%AE%9E%E6%88%98%E6%B5%8B%E8%AF%95"><span class="nav-number">6.</span> <span class="nav-text">FireFox 实战测试</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%99%E5%9C%A8%E6%9C%80%E5%90%8E"><span class="nav-number">8.</span> <span class="nav-text">写在最后</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="西门吹水"
+      src="/images/panda.jpg">
+  <p class="site-author-name" itemprop="name">西门吹水</p>
+  <div class="site-description" itemprop="description">天行健，君子以自强不息</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Deconx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Deconx" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:1067017428@qq.com" title="E-Mail → mailto:1067017428@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">null </a><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=2022009343" rel="noopener" target="_blank">鄂ICP备2022009343号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">西门吹水</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">127k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">1:56</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

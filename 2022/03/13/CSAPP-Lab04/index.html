@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/tiger.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/tiger.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/tiger.svg">
+  <link rel="mask-icon" href="/images/tiger.svg" color="#222">
+  <link rel="manifest" href="/images/tiger.svg">
+  <meta name="msapplication-config" content="/images/tiger.svg">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"deconx.top","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":-1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="穷且益坚，不坠青云之志。  实验概览Arch Lab 实验分为三部分。在 A 部分中，需要我们写一些简单的Y86-64程序，从而熟悉Y86-64工具的使用；在 B 部分中，我们要用一个新的指令来扩展SEQ；C 部分是本实验的核心，我们要通过理解流水线的过程以及利用新的指令来优化程序。 实验材料中有一个archlab.pdf，按照文档一步步往下走就可以了。make时，可能会缺少相关依赖，安装如下软">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CSAPP-Lab04 Architecture Lab 记录">
+<meta property="og:url" content="https://deconx.top/2022/03/13/CSAPP-Lab04/index.html">
+<meta property="og:site_name" content="潜龙勿用">
+<meta property="og:description" content="穷且益坚，不坠青云之志。  实验概览Arch Lab 实验分为三部分。在 A 部分中，需要我们写一些简单的Y86-64程序，从而熟悉Y86-64工具的使用；在 B 部分中，我们要用一个新的指令来扩展SEQ；C 部分是本实验的核心，我们要通过理解流水线的过程以及利用新的指令来优化程序。 实验材料中有一个archlab.pdf，按照文档一步步往下走就可以了。make时，可能会缺少相关依赖，安装如下软">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312124402451.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312143805214.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312155107577.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312222140881.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312224855040.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312225008116.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220313213326792.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220313213349365.png">
+<meta property="article:published_time" content="2022-03-13T08:28:24.000Z">
+<meta property="article:modified_time" content="2022-06-10T15:55:37.598Z">
+<meta property="article:author" content="西门吹水">
+<meta property="article:tag" content="计算机科学">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312124402451.png">
+
+<link rel="canonical" href="https://deconx.top/2022/03/13/CSAPP-Lab04/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CSAPP-Lab04 Architecture Lab 记录 | 潜龙勿用</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?71065cef1d4b78e896256ce80437f4e3";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">潜龙勿用</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">12</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Deconx" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/03/13/CSAPP-Lab04/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/panda.jpg">
+      <meta itemprop="name" content="西门吹水">
+      <meta itemprop="description" content="天行健，君子以自强不息">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="潜龙勿用">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CSAPP-Lab04 Architecture Lab 记录
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-13 16:28:24" itemprop="dateCreated datePublished" datetime="2022-03-13T16:28:24+08:00">2022-03-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-10 23:55:37" itemprop="dateModified" datetime="2022-06-10T23:55:37+08:00">2022-06-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CSAPP-Lab/" itemprop="url" rel="index"><span itemprop="name">CSAPP Lab</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>穷且益坚，不坠青云之志。</p>
+</blockquote>
+<h1 id="实验概览"><a href="#实验概览" class="headerlink" title="实验概览"></a>实验概览</h1><p>Arch Lab 实验分为三部分。在 A 部分中，需要我们写一些简单的<code>Y86-64</code>程序，从而熟悉<code>Y86-64</code>工具的使用；在 B 部分中，我们要用一个新的指令来扩展<code>SEQ</code>；C 部分是本实验的核心，我们要通过理解流水线的过程以及利用新的指令来优化程序。</p>
+<p>实验材料中有一个<code>archlab.pdf</code>，按照文档一步步往下走就可以了。<code>make</code>时，可能会缺少相关依赖，安装如下软件即可</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install tcl tcl-dev tk tk-dev</span><br><span class="line">sudo apt install flex</span><br><span class="line">sudo apt install bison</span><br></pre></td></tr></table></figure>
+
+<h1 id="Part-A"><a href="#Part-A" class="headerlink" title="Part A"></a>Part A</h1><p>在这部分，要用<code>Y86-64</code>汇编代码实现<code>examples.c</code>中的三个函数。这三个函数都是与链表有关的操作，链表结点定义如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* linked list element */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">ELE</span> &#123;</span></span><br><span class="line">    <span class="type">long</span> val;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ELE</span> *<span class="title">next</span>;</span></span><br><span class="line">&#125; *list_ptr;</span><br></pre></td></tr></table></figure>
+
+<p>在编写汇编代码之前，我们先回顾一下<code>Y86-64</code>的指令集：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"># movq i--&gt;r: 从立即数到寄存器...</span><br><span class="line">irmovq, rrmovq, mrmovq, rmmovq</span><br><span class="line"></span><br><span class="line"># Opq</span><br><span class="line">addq, subq, andq, xorq</span><br><span class="line"></span><br><span class="line"># 跳转 jXX</span><br><span class="line">jmp, jle, jl, je, jne, jge, jg</span><br><span class="line"></span><br><span class="line"># 条件传送 cmovXX</span><br><span class="line">cmovle, cmovl, cmove, cmovne, cmovge, cmovg</span><br><span class="line"></span><br><span class="line">call, ret</span><br><span class="line">pushq, popq</span><br><span class="line"></span><br><span class="line"># 停止指令的执行</span><br><span class="line">halt</span><br><span class="line"></span><br><span class="line"># 寄存器</span><br><span class="line">%rax, %rcx, %rdx</span><br><span class="line">%rbx, %rsp, %rbp</span><br><span class="line">%rsi, %rdi, %r8</span><br><span class="line">%r9, %r10, %r11</span><br><span class="line">%r12, %r13, %r14</span><br></pre></td></tr></table></figure>
+
+<h2 id="sum-list"><a href="#sum-list" class="headerlink" title="sum_list"></a>sum_list</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* sum_list - Sum the elements of a linked list */</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">sum_list</span><span class="params">(list_ptr ls)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">long</span> val = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (ls) &#123;</span><br><span class="line">        val += ls-&gt;val;</span><br><span class="line">        ls = ls-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> val;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>本题就是一个链表求和，非常简单。但要注意，这里不仅要写出函数段，还应该写出测试的代码段。直接给出转换后的汇编代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"># sum_list - Sum the elements of a linked list</span><br><span class="line"># author: Deconx</span><br><span class="line"></span><br><span class="line"># Execution begins at address 0</span><br><span class="line">        .pos 0</span><br><span class="line">        irmovq stack, %rsp      # Set up stack pointer</span><br><span class="line">        call main               # Execute main program</span><br><span class="line">        halt                    # Terminate program</span><br><span class="line"></span><br><span class="line"># Sample linked list</span><br><span class="line">        .align 8</span><br><span class="line">ele1:</span><br><span class="line">        .quad 0x00a</span><br><span class="line">        .quad ele2</span><br><span class="line">ele2:</span><br><span class="line">        .quad 0x0b0</span><br><span class="line">        .quad ele3</span><br><span class="line">ele3:</span><br><span class="line">        .quad 0xc00</span><br><span class="line">        .quad 0</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">        irmovq ele1,%rdi</span><br><span class="line">        call sum_list</span><br><span class="line">        ret</span><br><span class="line"></span><br><span class="line"># long sum_list(list_ptr ls)</span><br><span class="line"># start in %rdi</span><br><span class="line">sum_list:</span><br><span class="line">        irmovq $0, %rax</span><br><span class="line">        jmp test</span><br><span class="line"></span><br><span class="line">loop:</span><br><span class="line">        mrmovq (%rdi), %rsi</span><br><span class="line">        addq %rsi, %rax</span><br><span class="line">        mrmovq 8(%rdi), %rdi</span><br><span class="line"></span><br><span class="line">test:</span><br><span class="line">        andq %rdi, %rdi</span><br><span class="line">        jne loop</span><br><span class="line">        ret</span><br><span class="line"></span><br><span class="line"># Stack starts here and grows to lower addresses</span><br><span class="line">        .pos 0x200</span><br><span class="line">stack: </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>注意，应在<code>stack</code>下方空一行，否则汇编器会报错，报错原因我也不清楚。</p>
+<p>利用实验文件中给的<code>YAS</code>汇编器进行汇编，<code>YIS</code>指令集模拟器运行<strong>测试</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./yas sum.ys</span><br><span class="line">./yis sum.yo</span><br></pre></td></tr></table></figure>
+
+<p>得到结果</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312124402451.png" alt="image-20220312124402451"></p>
+<p>返回值<code>%rax=0xcba=0x00a+0x0b0+0xc00</code>，<strong>结果正确！</strong></p>
+<h2 id="rsum-list"><a href="#rsum-list" class="headerlink" title="rsum_list"></a>rsum_list</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* rsum_list - Recursive version of sum_list */</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">rsum_list</span><span class="params">(list_ptr ls)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (!ls)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="type">long</span> val = ls-&gt;val;</span><br><span class="line">        <span class="type">long</span> rest = rsum_list(ls-&gt;next);</span><br><span class="line">        <span class="keyword">return</span> val + rest;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是链表求和的递归实现，按照C语言代码的过程模拟即可，思路非常清晰，可以参考我的注释</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"># /* rsum_list - Recursive version of sum_list */</span><br><span class="line"># author: Deconx</span><br><span class="line"></span><br><span class="line"># Execution begins at address 0</span><br><span class="line">        .pos 0</span><br><span class="line">        irmovq stack, %rsp      # Set up stack pointer</span><br><span class="line">        call main               # Execute main program</span><br><span class="line">        halt                    # Terminate program</span><br><span class="line"></span><br><span class="line"># Sample linked list</span><br><span class="line">        .align 8</span><br><span class="line">ele1:</span><br><span class="line">        .quad 0x00a</span><br><span class="line">        .quad ele2</span><br><span class="line">ele2:</span><br><span class="line">        .quad 0x0b0</span><br><span class="line">        .quad ele3</span><br><span class="line">ele3:</span><br><span class="line">        .quad 0xc00</span><br><span class="line">        .quad 0</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">        irmovq ele1,%rdi</span><br><span class="line">        call rsum_list</span><br><span class="line">        ret</span><br><span class="line"></span><br><span class="line"># long sum_list(list_ptr ls)</span><br><span class="line"># start in %rdi</span><br><span class="line">rsum_list:</span><br><span class="line">        andq %rdi, %rdi</span><br><span class="line">        je return               # if(!ls)</span><br><span class="line">        mrmovq (%rdi), %rbx     # val = ls-&gt;val</span><br><span class="line">        mrmovq 8(%rdi), %rdi    # ls = ls-&gt;next</span><br><span class="line">        pushq %rbx</span><br><span class="line">        call rsum_list          # rsum_list(ls-&gt;next)</span><br><span class="line">        popq %rbx</span><br><span class="line">        addq %rbx, %rax         # val + rest</span><br><span class="line">        ret</span><br><span class="line">return:</span><br><span class="line">        irmovq $0, %rax</span><br><span class="line">        ret</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># Stack starts here and grows to lower addresses</span><br><span class="line">        .pos 0x200</span><br><span class="line">stack: </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><strong>测试</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312143805214.png" alt="image-20220312143805214"></p>
+<p><strong>结果正确！</strong></p>
+<h2 id="copy-block"><a href="#copy-block" class="headerlink" title="copy_block"></a>copy_block</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* copy_block - Copy src to dest and return xor checksum of src */</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">copy_block</span><span class="params">(<span class="type">long</span> *src, <span class="type">long</span> *dest, <span class="type">long</span> len)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">long</span> result = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="type">long</span> val = *src++;</span><br><span class="line">        *dest++ = val;</span><br><span class="line">        result ^= val;</span><br><span class="line">        len--;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>数组赋值操作，返回值为原数组各项的按位异或</p>
+<p>这段代码的架构与书上<strong>图 4-7</strong>的例子完全相同，包括常数的处理，循环的设置技巧，退出循环的判断… 照猫画虎即可，当然，我也在后面附上了注释</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">/* copy_block - Copy src to dest and return xor checksum of src */</span><br><span class="line"># author: Deconx</span><br><span class="line"></span><br><span class="line"># Execution begins at address 0</span><br><span class="line">        .pos 0</span><br><span class="line">        irmovq stack, %rsp      # Set up stack pointer</span><br><span class="line">        call main               # Execute main program</span><br><span class="line">        halt                    # Terminate program</span><br><span class="line"></span><br><span class="line"># Sample</span><br><span class="line">        .align 8</span><br><span class="line"># Source block</span><br><span class="line">src:</span><br><span class="line">        .quad 0x00a</span><br><span class="line">        .quad 0x0b0</span><br><span class="line">        .quad 0xc00</span><br><span class="line"></span><br><span class="line"># Destination block</span><br><span class="line">dest:</span><br><span class="line">        .quad 0x111</span><br><span class="line">        .quad 0x222</span><br><span class="line">        .quad 0x333</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">        irmovq src, %rdi        # src</span><br><span class="line">        irmovq dest, %rsi       # dest</span><br><span class="line">        irmovq $3, %rdx         # len</span><br><span class="line">        call copy_block</span><br><span class="line">        ret</span><br><span class="line"></span><br><span class="line"># long copy_block(long *src, long *dest, long len)</span><br><span class="line"># src in %rdi</span><br><span class="line"># dest in %rsi</span><br><span class="line"># len in %rdx</span><br><span class="line">copy_block:</span><br><span class="line">        irmovq $8, %r8</span><br><span class="line">        irmovq $1, %r9</span><br><span class="line">        irmovq $0, %rax</span><br><span class="line">        andq %rdx, %rdx</span><br><span class="line">        jmp test</span><br><span class="line">loop:</span><br><span class="line">        mrmovq (%rdi), %r10     # val = *src1</span><br><span class="line">        addq %r8, %rdi          # src++</span><br><span class="line">        rmmovq %r10, (%rsi)     # *dest = val</span><br><span class="line">        addq %r8, %rsi          # dest++</span><br><span class="line">        xorq %r10, %rax         # result ^= val</span><br><span class="line">        subq %r9, %rdx          # len--.  Set CC</span><br><span class="line">test:</span><br><span class="line">        jne loop                # Stop when 0</span><br><span class="line">        ret</span><br><span class="line">        </span><br><span class="line"># Stack starts here and grows to lower addresses</span><br><span class="line">        .pos 0x200</span><br><span class="line">stack: </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>编译运行一下</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312155107577.png" alt="image-20220312155107577"></p>
+<p><strong>结果完全正确</strong></p>
+<h1 id="Part-B"><a href="#Part-B" class="headerlink" title="Part B"></a>Part B</h1><p>Part B 整合了第 4 章的 homework - 4.51, 4.52。就是实现<code>iaddq</code>指令，将立即数与寄存器相加。可以参考<code>irmovq</code>和<code>OPq</code>指令的计算。在开始之前，我们还是先回顾一下处理一条指令的各个阶段吧！</p>
+<h2 id="回顾：指令处理框架"><a href="#回顾：指令处理框架" class="headerlink" title="回顾：指令处理框架"></a>回顾：指令处理框架</h2><ul>
+<li><strong>取址：</strong>根据 PC 的值从内存中读取指令字节<ul>
+<li>指令指示符字节的两个四位部分，为<code>icode:ifun</code></li>
+<li>寄存器指示符字节，为 <code>rA</code>, <code>rB</code></li>
+<li>8字节常数字，为 <code>valC</code></li>
+<li>计算下一条指令地址，为 <code>valP</code></li>
+</ul>
+</li>
+<li><strong>译码：</strong>从寄存器读入最多两个操作数<ul>
+<li>由 <code>rA</code>, <code>rB</code> 指明的寄存器，读为 <code>valA</code>, <code>valB</code></li>
+<li>对于指令<code>popq</code>, <code>pushq</code>, <code>call</code>, <code>ret</code>也可能从<code>%rsp</code>中读</li>
+</ul>
+</li>
+<li><strong>执行：</strong>根据<code>ifun</code>计算，或计算内存引用的有效地址，或增加或减少栈指针<ul>
+<li>对上述三者之一进行的操作得到的值为<code>valE</code></li>
+<li>如果是计算，则设置条件码</li>
+<li>对于条件传送指令，检验条件码和传送条件，并据此更新目标寄存器</li>
+<li>对于跳转指令，决定是否选择分支</li>
+</ul>
+</li>
+<li><strong>访存：</strong>顾名思义<ul>
+<li>可能是将数据写入内存</li>
+<li>若是从内存中读出数据，则读出的值为<code>valM</code></li>
+</ul>
+</li>
+<li><strong>写回：</strong>最多写两个结果到寄存器</li>
+<li><strong>更新 PC：</strong>将 PC 设置成下一条指令的地址</li>
+</ul>
+<h2 id="iaddq指令执行过程"><a href="#iaddq指令执行过程" class="headerlink" title="iaddq指令执行过程"></a><code>iaddq</code>指令执行过程</h2><p><code>iaddq</code>的执行与<code>Opq</code>非常相似，后者需要取出<code>rA</code>与<code>rB</code>分别指示的寄存器进行运算后再写回<code>rB</code>指示的寄存器。而前者与后者唯一的区别就是，不需要从<code>rA</code>中取数，直接立即数计算即可。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">指令为：iaddq V, rB</span><br><span class="line">取指：</span><br><span class="line">	icode:ifun &lt;- M_1[PC]</span><br><span class="line">	rA:rB &lt;- M_1[PC+<span class="number">1</span>]</span><br><span class="line">	valC &lt;- M_8[PC+<span class="number">2</span>]</span><br><span class="line">	valP &lt;- PC+<span class="number">10</span></span><br><span class="line"></span><br><span class="line">译码：</span><br><span class="line">	valB &lt;- R[rB]</span><br><span class="line"></span><br><span class="line">执行：</span><br><span class="line">	valE &lt;-  valB + valC</span><br><span class="line">	Set CC</span><br><span class="line"></span><br><span class="line">访存：</span><br><span class="line">	</span><br><span class="line">写回：</span><br><span class="line">	R[rB] &lt;- valE</span><br><span class="line"></span><br><span class="line">更新PC：</span><br><span class="line">	PC &lt;- valP</span><br></pre></td></tr></table></figure>
+
+<h2 id="修改HCL代码"><a href="#修改HCL代码" class="headerlink" title="修改HCL代码"></a>修改<code>HCL</code>代码</h2><p>接下来要在<code>seq-full.hcl</code>文件中修改代码。由于<code>iaddq</code>的操作与<code>OPq</code>和<code>irmovq</code>类似，比较取巧的做法是，搜索有这两个指令的描述块进行修改即可。本着学习的目的，我们分阶段对所有信号逐个分析</p>
+<p><strong>取指阶段</strong></p>
+<p><code>instr_valid</code>：判断指令是否合法，当然应该加上。修改后为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> instr_valid = icode in </span><br><span class="line">	&#123; INOP, IHALT, IRRMOVQ, IIRMOVQ, IRMMOVQ, IMRMOVQ,</span><br><span class="line">	       IOPQ, IJXX, ICALL, IRET, IPUSHQ, IPOPQ, IIADDQ &#125;;</span><br></pre></td></tr></table></figure>
+
+<p><code>need_regids</code>：判断指令是否包括寄存器指示符字节，当然也应该加上</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> need_regids =</span><br><span class="line">	icode in &#123; IRRMOVQ, IOPQ, IPUSHQ, IPOPQ, </span><br><span class="line">		     IIRMOVQ, IRMMOVQ, IMRMOVQ, IIADDQ &#125;;</span><br></pre></td></tr></table></figure>
+
+<p><code>need_valC</code>：判断指令是否包括常数字，还是要加上</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> need_valC =</span><br><span class="line">	icode in &#123; IIRMOVQ, IRMMOVQ, IMRMOVQ, IJXX, ICALL, IIADDQ &#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>译码和写回阶段</strong></p>
+<p><code>srcB</code>：赋为产生<code>valB</code>的寄存器。译码阶段要从<code>rA</code>, <code>rB</code> 指明的寄存器读为 <code>valA</code>, <code>valB</code>，而<code>iaddq</code>有一个<code>rB</code>，于是有以下修改</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">word srcB = [</span><br><span class="line">	icode in &#123; IOPQ, IRMMOVQ, IMRMOVQ, IIADDQ  &#125; : rB;</span><br><span class="line">	icode in &#123; IPUSHQ, IPOPQ, ICALL, IRET &#125; : RRSP;</span><br><span class="line">	<span class="number">1</span> : RNONE;  # Don<span class="number">&#x27;</span>t need <span class="keyword">register</span></span><br><span class="line">];</span><br></pre></td></tr></table></figure>
+
+<p><code>dst_E</code>：表明写端口 E 的目的寄存器，计算出来的值<code>valE</code>将放在那里。最终结果要存放在<code>rB</code>中，所以要修改</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">word dstE = [</span><br><span class="line">	icode in &#123; IRRMOVQ &#125; &amp;&amp; Cnd : rB;</span><br><span class="line">	icode in &#123; IIRMOVQ, IOPQ, IIADDQ &#125; : rB;</span><br><span class="line">	icode in &#123; IPUSHQ, IPOPQ, ICALL, IRET &#125; : RRSP;</span><br><span class="line">	<span class="number">1</span> : RNONE;  # Don<span class="number">&#x27;</span>t write any <span class="keyword">register</span></span><br><span class="line">];</span><br></pre></td></tr></table></figure>
+
+<p><strong>执行阶段</strong></p>
+<p>执行阶段<code>ALU</code>要对<code>aluA</code>和<code>aluB</code>进行计算，计算格式为：<code>aluB OP aluA</code>。所以<code>aluaA</code>可以是<code>valA</code>和<code>valC</code>或者<code>+-8</code>，<code>aluaB</code>只能是<code>valB</code>。而<code>iaddq</code>执行阶段进行的运算是<code>valB + valC</code>，于是可知修改</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">## Select input A to ALU</span><br><span class="line">word aluA = [</span><br><span class="line">	icode in &#123; IRRMOVQ, IOPQ &#125; : valA;</span><br><span class="line">	icode in &#123; IIRMOVQ, IRMMOVQ, IMRMOVQ, IIADDQ &#125; : valC;</span><br><span class="line">	icode in &#123; ICALL, IPUSHQ &#125; : <span class="number">-8</span>;</span><br><span class="line">	icode in &#123; IRET, IPOPQ &#125; : <span class="number">8</span>;</span><br><span class="line">	# Other instructions don<span class="number">&#x27;</span>t need ALU</span><br><span class="line">];</span><br><span class="line"></span><br><span class="line">## Select input B to ALU</span><br><span class="line">word aluB = [</span><br><span class="line">	icode in &#123; IRMMOVQ, IMRMOVQ, IOPQ, ICALL, </span><br><span class="line">		      IPUSHQ, IRET, IPOPQ, IIADDQ &#125; : valB;</span><br><span class="line">	icode in &#123; IRRMOVQ, IIRMOVQ &#125; : <span class="number">0</span>;</span><br><span class="line">	# Other instructions don<span class="number">&#x27;</span>t need ALU</span><br><span class="line">];</span><br></pre></td></tr></table></figure>
+
+<p><code>set_cc</code>：判断是否应该更新条件码寄存器，这里应该加上</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> set_cc = icode in &#123; IOPQ, IIADDQ &#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>访存阶段</strong></p>
+<p><code>iaddq</code>没有访存阶段，无需修改</p>
+<p><strong>更新PC阶段</strong></p>
+<p><code>iaddq</code>不涉及转移等操作，也无需修改</p>
+<h2 id="测试SEQ"><a href="#测试SEQ" class="headerlink" title="测试SEQ"></a>测试<code>SEQ</code></h2><h3 id="编译失败处理办法"><a href="#编译失败处理办法" class="headerlink" title="编译失败处理办法"></a>编译失败处理办法</h3><p>编译<code>ssim</code>的时候出现了很多问题：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312222140881.png" alt="image-20220312222140881"></p>
+<p>提示不存在<code>tk.h</code>这个头文件，这是由于实验文件太老。把<code>Makefile</code>修改一下。第 20 行改为</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TKINC=-isystem /usr/include/tcl8.6</span><br></pre></td></tr></table></figure>
+
+<p>第 26 行改为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CFLAGS=-Wall -O2 -DUSE_INTERP_RESULT</span><br></pre></td></tr></table></figure>
+
+<p>但是接下来还是报错了</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/usr/bin/ld: /tmp/ccKTMI04.o:(.data.rel+0x0): undefined reference to `matherr<span class="string">&#x27;</span></span><br><span class="line"><span class="string">collect2: error: ld returned 1 exit status</span></span><br><span class="line"><span class="string">make: *** [Makefile:44: ssim] Error 1</span></span><br></pre></td></tr></table></figure>
+
+<p>这是因为较新版本<code>glibc</code>弃用了这部分内容</p>
+<p>解决办法是注释掉<code> /sim/pipe/psim.c 806、807 line</code>和<code> /sim/seq/ssim.c 844、845 line</code>。即：有源代码中有<code>matherr</code>的一行和它的下一行</p>
+<p>接下来就能编译成功了！虽然会有很多 Warning</p>
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p><strong>第一轮测试</strong></p>
+<p>运行一个简单的<code>Y86-64</code> 程序，并将结果<code>ISA</code>模拟器的结果进行比对，输出如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">&gt; ./ssim -t ../y86-code/asumi.yo</span><br><span class="line">Y86-64 Processor: seq-full.hcl</span><br><span class="line">137 bytes of code <span class="built_in">read</span></span><br><span class="line">IF: Fetched irmovq at 0x0.  ra=----, rb=%rsp, valC = 0x100</span><br><span class="line">IF: Fetched call at 0xa.  ra=----, rb=----, valC = 0x38</span><br><span class="line">Wrote 0x13 to address 0xf8</span><br><span class="line">IF: Fetched irmovq at 0x38.  ra=----, rb=%rdi, valC = 0x18</span><br><span class="line">IF: Fetched irmovq at 0x42.  ra=----, rb=%rsi, valC = 0x4</span><br><span class="line">IF: Fetched call at 0x4c.  ra=----, rb=----, valC = 0x56</span><br><span class="line">Wrote 0x55 to address 0xf0</span><br><span class="line">IF: Fetched xorq at 0x56.  ra=%rax, rb=%rax, valC = 0x0</span><br><span class="line">IF: Fetched andq at 0x58.  ra=%rsi, rb=%rsi, valC = 0x0</span><br><span class="line">IF: Fetched jmp at 0x5a.  ra=----, rb=----, valC = 0x83</span><br><span class="line">IF: Fetched jne at 0x83.  ra=----, rb=----, valC = 0x63</span><br><span class="line">IF: Fetched mrmovq at 0x63.  ra=%r10, rb=%rdi, valC = 0x0</span><br><span class="line">IF: Fetched addq at 0x6d.  ra=%r10, rb=%rax, valC = 0x0</span><br><span class="line">IF: Fetched iaddq at 0x6f.  ra=----, rb=%rdi, valC = 0x8</span><br><span class="line">IF: Fetched iaddq at 0x79.  ra=----, rb=%rsi, valC = 0xffffffffffffffff</span><br><span class="line">IF: Fetched jne at 0x83.  ra=----, rb=----, valC = 0x63</span><br><span class="line">IF: Fetched mrmovq at 0x63.  ra=%r10, rb=%rdi, valC = 0x0</span><br><span class="line">IF: Fetched addq at 0x6d.  ra=%r10, rb=%rax, valC = 0x0</span><br><span class="line">IF: Fetched iaddq at 0x6f.  ra=----, rb=%rdi, valC = 0x8</span><br><span class="line">IF: Fetched iaddq at 0x79.  ra=----, rb=%rsi, valC = 0xffffffffffffffff</span><br><span class="line">IF: Fetched jne at 0x83.  ra=----, rb=----, valC = 0x63</span><br><span class="line">IF: Fetched mrmovq at 0x63.  ra=%r10, rb=%rdi, valC = 0x0</span><br><span class="line">IF: Fetched addq at 0x6d.  ra=%r10, rb=%rax, valC = 0x0</span><br><span class="line">IF: Fetched iaddq at 0x6f.  ra=----, rb=%rdi, valC = 0x8</span><br><span class="line">IF: Fetched iaddq at 0x79.  ra=----, rb=%rsi, valC = 0xffffffffffffffff</span><br><span class="line">IF: Fetched jne at 0x83.  ra=----, rb=----, valC = 0x63</span><br><span class="line">IF: Fetched mrmovq at 0x63.  ra=%r10, rb=%rdi, valC = 0x0</span><br><span class="line">IF: Fetched addq at 0x6d.  ra=%r10, rb=%rax, valC = 0x0</span><br><span class="line">IF: Fetched iaddq at 0x6f.  ra=----, rb=%rdi, valC = 0x8</span><br><span class="line">IF: Fetched iaddq at 0x79.  ra=----, rb=%rsi, valC = 0xffffffffffffffff</span><br><span class="line">IF: Fetched jne at 0x83.  ra=----, rb=----, valC = 0x63</span><br><span class="line">IF: Fetched ret at 0x8c.  ra=----, rb=----, valC = 0x0</span><br><span class="line">IF: Fetched ret at 0x55.  ra=----, rb=----, valC = 0x0</span><br><span class="line">IF: Fetched halt at 0x13.  ra=----, rb=----, valC = 0x0</span><br><span class="line">32 instructions executed</span><br><span class="line">Status = HLT</span><br><span class="line">Condition Codes: Z=1 S=0 O=0</span><br><span class="line">Changed Register State:</span><br><span class="line">%rax:   0x0000000000000000      0x0000abcdabcdabcd</span><br><span class="line">%rsp:   0x0000000000000000      0x0000000000000100</span><br><span class="line">%rdi:   0x0000000000000000      0x0000000000000038</span><br><span class="line">%r10:   0x0000000000000000      0x0000a000a000a000</span><br><span class="line">Changed Memory State:</span><br><span class="line">0x00f0: 0x0000000000000000      0x0000000000000055</span><br><span class="line">0x00f8: 0x0000000000000000      0x0000000000000013</span><br><span class="line">ISA Check Succeeds</span><br></pre></td></tr></table></figure>
+
+<p>成功！</p>
+<p><strong>标准测试</strong></p>
+<p>运行一个标准检查程序</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">&gt; <span class="built_in">cd</span> ../y86-code; make testssim</span><br><span class="line">../seq/ssim -t asum.yo &gt; asum.seq</span><br><span class="line">../seq/ssim -t asumr.yo &gt; asumr.seq</span><br><span class="line">../seq/ssim -t cjr.yo &gt; cjr.seq</span><br><span class="line">../seq/ssim -t j-cc.yo &gt; j-cc.seq</span><br><span class="line">../seq/ssim -t poptest.yo &gt; poptest.seq</span><br><span class="line">../seq/ssim -t pushquestion.yo &gt; pushquestion.seq</span><br><span class="line">../seq/ssim -t pushtest.yo &gt; pushtest.seq</span><br><span class="line">../seq/ssim -t prog1.yo &gt; prog1.seq</span><br><span class="line">../seq/ssim -t prog2.yo &gt; prog2.seq</span><br><span class="line">../seq/ssim -t prog3.yo &gt; prog3.seq</span><br><span class="line">../seq/ssim -t prog4.yo &gt; prog4.seq</span><br><span class="line">../seq/ssim -t prog5.yo &gt; prog5.seq</span><br><span class="line">../seq/ssim -t prog6.yo &gt; prog6.seq</span><br><span class="line">../seq/ssim -t prog7.yo &gt; prog7.seq</span><br><span class="line">../seq/ssim -t prog8.yo &gt; prog8.seq</span><br><span class="line">../seq/ssim -t ret-hazard.yo &gt; ret-hazard.seq</span><br><span class="line">grep <span class="string">&quot;ISA Check&quot;</span> *.<span class="built_in">seq</span></span><br><span class="line">asum.seq:ISA Check Succeeds</span><br><span class="line">asumr.seq:ISA Check Succeeds</span><br><span class="line">cjr.seq:ISA Check Succeeds</span><br><span class="line">j-cc.seq:ISA Check Succeeds</span><br><span class="line">poptest.seq:ISA Check Succeeds</span><br><span class="line">prog1.seq:ISA Check Succeeds</span><br><span class="line">prog2.seq:ISA Check Succeeds</span><br><span class="line">prog3.seq:ISA Check Succeeds</span><br><span class="line">prog4.seq:ISA Check Succeeds</span><br><span class="line">prog5.seq:ISA Check Succeeds</span><br><span class="line">prog6.seq:ISA Check Succeeds</span><br><span class="line">prog7.seq:ISA Check Succeeds</span><br><span class="line">prog8.seq:ISA Check Succeeds</span><br><span class="line">pushquestion.seq:ISA Check Succeeds</span><br><span class="line">pushtest.seq:ISA Check Succeeds</span><br><span class="line">ret-hazard.seq:ISA Check Succeeds</span><br><span class="line"><span class="built_in">rm</span> asum.seq asumr.seq cjr.seq j-cc.seq poptest.seq pushquestion.seq pushtest.seq prog1.seq prog2.seq prog3.seq prog4.seq prog5.seq prog6.seq prog7.seq prog8.seq ret-hazard.seq</span><br></pre></td></tr></table></figure>
+
+<p>全部都是 Succeeds</p>
+<p><strong>回归测试</strong></p>
+<p>测试除<code>iaddq</code>的所有指令</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312224855040.png" alt="image-20220312224855040"></p>
+<p>专门测试<code>iaddq</code>指令</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220312225008116.png" alt="image-20220312225008116"></p>
+<p>于是，我们就通过了实验材料中的所有测试用例！</p>
+<h1 id="Part-C"><a href="#Part-C" class="headerlink" title="Part C"></a>Part C</h1><p>Part C 在<code>sim/pipe</code>中进行。PIPE 是使用了转发技术的流水线化的<code>Y86-64</code>处理器。它相比 Part B 增加了流水线寄存器和流水线控制逻辑。</p>
+<p>在本部分中，我们要通过修改<code>pipe-full.hcl</code>和<code>ncopy.ys</code>来优化程序，通过程序的效率，也就是 CPE 来计算我们的分数，分数由下述公式算出<br>$$<br>S&#x3D;\begin{cases}<br>    0,                      c&gt;10.5\<br>    20\cdot \left( 10.5-c \right) ,     7.50\leqslant c\leqslant 10.50\<br>    60,                     c&lt;7.50\<br>\end{cases}<br>$$<br>首先，<code>iaddq</code>是一个非常好的指令，它可以把两步简化为一步，所以我们先修改<code>pipe-full.hcl</code>，增加<code>iaddq</code>指令，修改参考 Part B 即可。稳妥起见，修改后还是应该测试一下这个模拟器，<code>Makefile</code>参考 Part B 部分进行同样的修改后编译。然后执行以下命令进行测试：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./psim -t ../y86-code/asumi.yo</span><br><span class="line"><span class="built_in">cd</span> ../ptest; make SIM=../pipe/psim</span><br><span class="line"><span class="built_in">cd</span> ../ptest; make SIM=../pipe/psim TFLAGS=-i</span><br></pre></td></tr></table></figure>
+
+<p>当所有测试都显示 Succeed 后，就可以真正开始本部分的重头戏了！</p>
+<p><code>ncopy</code>函数将一个长度为<code>len</code>的整型数组<code>src</code>复制到一个不重叠的数组<code>dst</code>，并返回<code>src</code>中正数的个数。C 语言代码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * ncopy - copy src to dst, returning number of positive ints</span></span><br><span class="line"><span class="comment"> * contained in src array.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">word_t</span> <span class="title function_">ncopy</span><span class="params">(<span class="type">word_t</span> *src, <span class="type">word_t</span> *dst, <span class="type">word_t</span> len)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">word_t</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="type">word_t</span> val;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">	val = *src++;</span><br><span class="line">	*dst++ = val;</span><br><span class="line">	<span class="keyword">if</span> (val &gt; <span class="number">0</span>)</span><br><span class="line">	    count++;</span><br><span class="line">	len--;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>原汇编代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"># You can modify this portion</span><br><span class="line">	# Loop header</span><br><span class="line">	xorq %rax,%rax		# count = 0;</span><br><span class="line">	andq %rdx,%rdx		# len &lt;= 0?</span><br><span class="line">	jle Done		# if so, goto Done:</span><br><span class="line"></span><br><span class="line">Loop:	mrmovq (%rdi), %r10	# read val from src...</span><br><span class="line">	rmmovq %r10, (%rsi)	# ...and store it to dst</span><br><span class="line">	andq %r10, %r10		# val &lt;= 0?</span><br><span class="line">	jle Npos		# if so, goto Npos:</span><br><span class="line">	irmovq $1, %r10</span><br><span class="line">	addq %r10, %rax		# count++</span><br><span class="line">Npos:	irmovq $1, %r10</span><br><span class="line">	subq %r10, %rdx		# len--</span><br><span class="line">	irmovq $8, %r10</span><br><span class="line">	addq %r10, %rdi		# src++</span><br><span class="line">	addq %r10, %rsi		# dst++</span><br><span class="line">	andq %rdx,%rdx		# len &gt; 0?</span><br><span class="line">	jg Loop			# if so, goto Loop:</span><br></pre></td></tr></table></figure>
+
+<p>先分别执行以下命令，对原始代码测试一波 CPE</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./correctness.pl</span><br><span class="line">./benchmark.pl</span><br></pre></td></tr></table></figure>
+
+<p>得</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Average CPE     <span class="number">15.18</span></span><br><span class="line">Score   <span class="number">0.0</span>/<span class="number">60.0</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="利用iaddq"><a href="#利用iaddq" class="headerlink" title="利用iaddq"></a><strong>利用<code>iaddq</code></strong></h2><p>首先能够直观看到，为了<code>len--/src++/dst++</code>等操作，对<code>%rdi</code>进行了不少次赋值操作，这些都可以用我们新增的<code>iaddq</code>指令替代。</p>
+<p>替代后代码为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># You can modify this portion</span><br><span class="line">	# Loop header</span><br><span class="line">	xorq %rax,%rax		<span class="meta"># count = 0;</span></span><br><span class="line">	andq %rdx,%rdx		<span class="meta"># len &lt;= 0?</span></span><br><span class="line">	jle Done		<span class="meta"># <span class="keyword">if</span> so, goto Done:</span></span><br><span class="line"></span><br><span class="line">Loop:	</span><br><span class="line">	mrmovq (%rdi), %r10	<span class="meta"># read val from src...</span></span><br><span class="line">	rmmovq %r10, (%rsi)	# ...and store it to dst</span><br><span class="line">	andq %r10, %r10		<span class="meta"># val &lt;= 0?</span></span><br><span class="line">	jle Npos		<span class="meta"># <span class="keyword">if</span> so, goto Npos:</span></span><br><span class="line">	iaddq $<span class="number">1</span>, %rax		<span class="meta"># count++</span></span><br><span class="line">Npos:	</span><br><span class="line">	iaddq $<span class="number">-1</span>, %rdx		<span class="meta"># len--</span></span><br><span class="line">	iaddq $<span class="number">8</span>, %rdi		<span class="meta"># src++</span></span><br><span class="line">	iaddq $<span class="number">8</span>, %rsi		<span class="meta"># dst++</span></span><br><span class="line">	andq %rdx,%rdx		<span class="meta"># len &gt; 0?</span></span><br><span class="line">	jg Loop			<span class="meta"># <span class="keyword">if</span> so, goto Loop:</span></span><br></pre></td></tr></table></figure>
+
+<p>测试 CPE</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Average CPE     <span class="number">12.70</span></span><br><span class="line">Score   <span class="number">0.0</span>/<span class="number">60.0</span></span><br></pre></td></tr></table></figure>
+
+<p>虽然分数还是0，但已经有了不少提升</p>
+<h2 id="循环展开"><a href="#循环展开" class="headerlink" title="循环展开"></a>循环展开</h2><p>根据文档的提示，可以试试循环展开进行优化。 循环展开通过增加每次迭代计算的元素的数量，减少循环的迭代次数。这样做对效率提升有什么作用呢？</p>
+<ul>
+<li>减少了索引计算的次数</li>
+<li>减少了条件分支的判断次数</li>
+</ul>
+<p>那么展开几路效率最高呢？我从5路展开开始分别进行了测试</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">5</span>路：</span><br><span class="line">    Average CPE     <span class="number">9.61</span></span><br><span class="line">	Score   <span class="number">17.8</span>/<span class="number">60.0</span></span><br><span class="line"></span><br><span class="line"><span class="number">6</span>路：</span><br><span class="line">    Average CPE     <span class="number">9.58</span></span><br><span class="line">	Score   <span class="number">18.3</span>/<span class="number">60.0</span></span><br><span class="line">    </span><br><span class="line"><span class="number">7</span>路：</span><br><span class="line">    Average CPE     <span class="number">9.59</span></span><br><span class="line">	Score   <span class="number">18.2</span>/<span class="number">60.0</span></span><br><span class="line">    </span><br><span class="line"><span class="number">8</span>路：</span><br><span class="line">    Average CPE     <span class="number">9.62</span></span><br><span class="line">	Score   <span class="number">17.5</span>/<span class="number">60.0</span></span><br></pre></td></tr></table></figure>
+
+<p>所以，我选择进行6路展开</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line">	# Loop header</span><br><span class="line">	andq %rdx,%rdx		# len &lt;= 0?</span><br><span class="line">	jmp test</span><br><span class="line">Loop:</span><br><span class="line">	mrmovq (%rdi),%r8</span><br><span class="line">	rmmovq %r8,(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle Loop1</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">Loop1:</span><br><span class="line">	mrmovq 8(%rdi),%r8</span><br><span class="line">	rmmovq %r8,8(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle Loop2</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">Loop2:</span><br><span class="line">	mrmovq 16(%rdi),%r8</span><br><span class="line">	rmmovq %r8,16(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle Loop3</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">Loop3:</span><br><span class="line">	mrmovq 24(%rdi),%r8</span><br><span class="line">	rmmovq %r8,24(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle Loop4</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">Loop4:</span><br><span class="line">	mrmovq 32(%rdi),%r8</span><br><span class="line">	rmmovq %r8,32(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle Loop5</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">Loop5:</span><br><span class="line">	mrmovq 40(%rdi),%r8</span><br><span class="line">	rmmovq %r8,40(%rsi)</span><br><span class="line">	iaddq $48,%rdi</span><br><span class="line">	iaddq $48,%rsi</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle test</span><br><span class="line">	iaddq $1,%rax	</span><br><span class="line">test:</span><br><span class="line">	iaddq $-6, %rdx			# 先减，判断够不够6个</span><br><span class="line">	jge Loop				# 6路展开</span><br><span class="line">	iaddq $-8,%rdi</span><br><span class="line">	iaddq $-8,%rsi</span><br><span class="line">	iaddq $6, %rdx</span><br><span class="line">	jmp test2				#剩下的</span><br><span class="line">Lore:</span><br><span class="line">	mrmovq (%rdi),%r8</span><br><span class="line">	rmmovq %r8,(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle test2</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">test2:</span><br><span class="line">	iaddq $8,%rdi</span><br><span class="line">	iaddq $8,%rsi</span><br><span class="line">	iaddq $-1, %rdx</span><br><span class="line">	jge Lore</span><br></pre></td></tr></table></figure>
+
+<p>代码逻辑非常简单：每次循环都对6个数进行复制，每次复制就设置一个条件语句判断返回时是否加1，对于剩下的数据每次循环只对1个数进行复制。</p>
+<p>为了方便分析，我把极端的几个例子的情况列下来：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">        ncopy</span><br><span class="line"><span class="number">0</span>       <span class="number">26</span></span><br><span class="line"><span class="number">1</span>       <span class="number">35</span>      <span class="number">35.00</span></span><br><span class="line"><span class="number">2</span>       <span class="number">47</span>      <span class="number">23.50</span></span><br><span class="line"><span class="number">3</span>       <span class="number">56</span>      <span class="number">18.67</span></span><br><span class="line"><span class="number">4</span>       <span class="number">68</span>      <span class="number">17.00</span></span><br><span class="line"><span class="number">5</span>       <span class="number">77</span>      <span class="number">15.40</span></span><br><span class="line"><span class="number">6</span>       <span class="number">69</span>      <span class="number">11.50</span></span><br><span class="line"><span class="number">7</span>       <span class="number">78</span>      <span class="number">11.14</span></span><br><span class="line"><span class="number">8</span>       <span class="number">90</span>      <span class="number">11.25</span></span><br><span class="line"><span class="number">9</span>       <span class="number">99</span>      <span class="number">11.00</span></span><br><span class="line"><span class="number">10</span>      <span class="number">111</span>     <span class="number">11.10</span></span><br><span class="line"><span class="number">11</span>      <span class="number">120</span>     <span class="number">10.91</span></span><br><span class="line"><span class="number">12</span>      <span class="number">112</span>     <span class="number">9.33</span></span><br><span class="line"><span class="number">13</span>      <span class="number">121</span>     <span class="number">9.31</span></span><br><span class="line"><span class="number">14</span>      <span class="number">133</span>     <span class="number">9.50</span></span><br><span class="line"><span class="number">15</span>      <span class="number">142</span>     <span class="number">9.47</span></span><br><span class="line"><span class="number">16</span>      <span class="number">154</span>     <span class="number">9.62</span></span><br><span class="line"><span class="number">17</span>      <span class="number">163</span>     <span class="number">9.59</span></span><br><span class="line"><span class="number">18</span>      <span class="number">155</span>     <span class="number">8.61</span></span><br><span class="line">...</span><br><span class="line"><span class="number">50</span>      <span class="number">391</span>     <span class="number">7.82</span></span><br><span class="line"><span class="number">51</span>      <span class="number">400</span>     <span class="number">7.84</span></span><br><span class="line"><span class="number">52</span>      <span class="number">412</span>     <span class="number">7.92</span></span><br><span class="line"><span class="number">53</span>      <span class="number">421</span>     <span class="number">7.94</span></span><br><span class="line"><span class="number">54</span>      <span class="number">413</span>     <span class="number">7.65</span></span><br><span class="line"><span class="number">55</span>      <span class="number">422</span>     <span class="number">7.67</span></span><br><span class="line"><span class="number">56</span>      <span class="number">434</span>     <span class="number">7.75</span></span><br><span class="line"><span class="number">57</span>      <span class="number">443</span>     <span class="number">7.77</span></span><br><span class="line"><span class="number">58</span>      <span class="number">455</span>     <span class="number">7.84</span></span><br><span class="line"><span class="number">59</span>      <span class="number">464</span>     <span class="number">7.86</span></span><br><span class="line"><span class="number">60</span>      <span class="number">456</span>     <span class="number">7.60</span></span><br><span class="line"><span class="number">61</span>      <span class="number">465</span>     <span class="number">7.62</span></span><br><span class="line"><span class="number">62</span>      <span class="number">477</span>     <span class="number">7.69</span></span><br><span class="line"><span class="number">63</span>      <span class="number">486</span>     <span class="number">7.71</span></span><br><span class="line"><span class="number">64</span>      <span class="number">498</span>     <span class="number">7.78</span></span><br><span class="line">Average CPE     <span class="number">9.58</span></span><br><span class="line">Score   <span class="number">18.3</span>/<span class="number">60.0</span></span><br></pre></td></tr></table></figure>
+
+<p>观察上表，对于小数据而言， CPE 的值非常大，后续可以考虑对小数据进行优化。我们先优化剩余数据的处理，对他们继续进行循环展开。</p>
+<h2 id="剩余数据处理"><a href="#剩余数据处理" class="headerlink" title="剩余数据处理"></a>剩余数据处理</h2><p>对于剩余数据，我选择3路循环展开。前面的6路与上面代码一样，我就不再贴出来了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"># Loop header</span><br><span class="line">	andq %rdx,%rdx		<span class="meta"># len &lt;= 0?</span></span><br><span class="line">	jmp test</span><br><span class="line">Loop:...</span><br><span class="line">Loop1:...</span><br><span class="line">...</span><br><span class="line">Loop4:...</span><br><span class="line">Loop5:...</span><br><span class="line">test:</span><br><span class="line">	iaddq $<span class="number">-6</span>, %rdx			# 先减，判断够不够<span class="number">6</span>个</span><br><span class="line">	jge Loop				# <span class="number">6</span>路展开</span><br><span class="line">	iaddq $<span class="number">6</span>, %rdx</span><br><span class="line">	jmp test2				#剩下的</span><br><span class="line"></span><br><span class="line">L:</span><br><span class="line">	mrmovq (%rdi),%r8</span><br><span class="line">	rmmovq %r8,(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle L1</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">L1:</span><br><span class="line">	mrmovq <span class="number">8</span>(%rdi),%r8</span><br><span class="line">	rmmovq %r8,<span class="number">8</span>(%rsi)</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle L2</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">L2:</span><br><span class="line">	mrmovq <span class="number">16</span>(%rdi),%r8</span><br><span class="line">	rmmovq %r8,<span class="number">16</span>(%rsi)</span><br><span class="line">	iaddq $<span class="number">24</span>,%rdi</span><br><span class="line">	iaddq $<span class="number">24</span>,%rsi</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle test2</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">test2:</span><br><span class="line">	iaddq $<span class="number">-3</span>, %rdx			# 先减，判断够不够<span class="number">3</span>个</span><br><span class="line">	jge L</span><br><span class="line">	iaddq $<span class="number">2</span>, %rdx			# <span class="number">-1</span>则不剩了，直接Done,<span class="number">0</span> 剩一个, <span class="number">1</span>剩<span class="number">2</span>个</span><br><span class="line">    je R0</span><br><span class="line">    jl Done</span><br><span class="line">	<span class="title function_">mrmovq</span> <span class="params">(%rdi)</span>,%r8</span><br><span class="line">	rmmovq %r8,<span class="params">(%rsi)</span></span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle R2</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">R2:</span><br><span class="line">	mrmovq 8<span class="params">(%rdi)</span>,%r8</span><br><span class="line">	rmmovq %r8,8<span class="params">(%rsi)</span></span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle Done</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">	jmp Done</span><br><span class="line">R0:</span><br><span class="line">	<span class="title function_">mrmovq</span> <span class="params">(%rdi)</span>,%r8</span><br><span class="line">	rmmovq %r8,<span class="params">(%rsi)</span></span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle Done</span><br><span class="line">	iaddq $1,%rax</span><br></pre></td></tr></table></figure>
+
+<p>注意对于3路展开的特殊处理。看第38、39行，通过直接判断剩余数据的数量减少一次条件判断</p>
+<p>CPE 值为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Average CPE     <span class="number">9.07</span></span><br><span class="line">Score   <span class="number">28.5</span>/<span class="number">60.0</span></span><br></pre></td></tr></table></figure>
+
+<p>提升了很多，但是依然连一般的分数都还没拿到…</p>
+<h2 id="消除气泡"><a href="#消除气泡" class="headerlink" title="消除气泡"></a>消除气泡</h2><p>注意，程序多次使用了下面的操作：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mrmovq (%rdi), %r8</span><br><span class="line">rmmovq %r8, (%rsi)</span><br></pre></td></tr></table></figure>
+
+<p><code>Y86-64</code>处理器的流水线有 F(取指)、D(译码)、E(执行)、M(访存)、W(写回) 五个阶段，D 阶段才读取寄存器，M 阶段才读取对应内存值，</p>
+<p>即使使用转发来避免数据冒险，这其中也至少会有一个气泡。像这样</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mrmovq (%rdi), %r8</span><br><span class="line">bubble</span><br><span class="line">rmmovq %r8, (%rsi)</span><br></pre></td></tr></table></figure>
+
+<p>一个优化办法是，多取一个寄存器，连续进行两次数据复制。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mrmovq (%rdi), %r8</span><br><span class="line">mrmovq <span class="number">8</span>(%rdi), %r9</span><br><span class="line">rmmovq %r8, (%rsi)</span><br><span class="line">rmmovq %r9, <span class="number">8</span>(%rsi)</span><br></pre></td></tr></table></figure>
+
+<p>像这样，对<code>%r8</code>和<code>%r9</code>进行读入和读出的操作之间都隔着一条其他指令，就不会有气泡产生了。代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line">	# Loop header</span><br><span class="line">	andq %rdx,%rdx		<span class="meta"># len &lt;= 0?</span></span><br><span class="line">	jmp test</span><br><span class="line">Loop:</span><br><span class="line">	mrmovq (%rdi),%r8</span><br><span class="line">	mrmovq <span class="number">8</span>(%rdi),%r9</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	rmmovq %r8,(%rsi)</span><br><span class="line">	rmmovq %r9,<span class="number">8</span>(%rsi)</span><br><span class="line">	jle Loop1</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">Loop1:	</span><br><span class="line">	andq %r9,%r9</span><br><span class="line">	jle Loop2</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">Loop2:</span><br><span class="line">	mrmovq <span class="number">16</span>(%rdi),%r8</span><br><span class="line">	mrmovq <span class="number">24</span>(%rdi),%r9</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	rmmovq %r8,<span class="number">16</span>(%rsi)</span><br><span class="line">	rmmovq %r9,<span class="number">24</span>(%rsi)</span><br><span class="line">	jle Loop3</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">Loop3:	</span><br><span class="line">	andq %r9,%r9</span><br><span class="line">	jle Loop4</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">Loop4:</span><br><span class="line">	mrmovq <span class="number">32</span>(%rdi),%r8</span><br><span class="line">	mrmovq <span class="number">40</span>(%rdi),%r9</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	rmmovq %r8,<span class="number">32</span>(%rsi)</span><br><span class="line">	rmmovq %r9,<span class="number">40</span>(%rsi)</span><br><span class="line">	jle Loop5</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">Loop5:</span><br><span class="line">	iaddq $<span class="number">48</span>,%rdi</span><br><span class="line">	iaddq $<span class="number">48</span>,%rsi		</span><br><span class="line">	andq %r9,%r9</span><br><span class="line">	jle test</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">test:</span><br><span class="line">	iaddq $<span class="number">-6</span>, %rdx			# 先减，判断够不够<span class="number">6</span>个</span><br><span class="line">	jge Loop				# <span class="number">6</span>路展开</span><br><span class="line">	iaddq $<span class="number">6</span>, %rdx</span><br><span class="line">	jmp test2				#剩下的</span><br><span class="line"></span><br><span class="line">L:</span><br><span class="line">	mrmovq (%rdi),%r8</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	rmmovq %r8,(%rsi)</span><br><span class="line">	jle L1</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">L1:</span><br><span class="line">	mrmovq <span class="number">8</span>(%rdi),%r8</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	rmmovq %r8,<span class="number">8</span>(%rsi)</span><br><span class="line">	jle L2</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">L2:</span><br><span class="line">	mrmovq <span class="number">16</span>(%rdi),%r8</span><br><span class="line">	iaddq $<span class="number">24</span>,%rdi</span><br><span class="line">	rmmovq %r8,<span class="number">16</span>(%rsi)</span><br><span class="line">	iaddq $<span class="number">24</span>,%rsi</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle test2</span><br><span class="line">	iaddq $<span class="number">1</span>,%rax</span><br><span class="line">test2:</span><br><span class="line">	iaddq $<span class="number">-3</span>, %rdx			# 先减，判断够不够<span class="number">3</span>个</span><br><span class="line">	jge L</span><br><span class="line">	iaddq $<span class="number">2</span>, %rdx			# <span class="number">-1</span>则不剩了，直接Done,<span class="number">0</span> 剩一个, <span class="number">1</span>剩<span class="number">2</span>个</span><br><span class="line">    je R0</span><br><span class="line">    jl Done</span><br><span class="line">	<span class="title function_">mrmovq</span> <span class="params">(%rdi)</span>,%r8</span><br><span class="line">	mrmovq 8<span class="params">(%rdi)</span>,%r9</span><br><span class="line">	rmmovq %r8,<span class="params">(%rsi)</span></span><br><span class="line">	rmmovq %r9,8<span class="params">(%rsi)</span></span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	jle R2</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">R2:</span><br><span class="line">	andq %r9,%r9</span><br><span class="line">	jle Done</span><br><span class="line">	iaddq $1,%rax</span><br><span class="line">	jmp Done</span><br><span class="line">R0:</span><br><span class="line">	<span class="title function_">mrmovq</span> <span class="params">(%rdi)</span>,%r8</span><br><span class="line">	andq %r8,%r8</span><br><span class="line">	rmmovq %r8,<span class="params">(%rsi)</span></span><br><span class="line">	jle Done</span><br><span class="line">	iaddq $1,%rax</span><br></pre></td></tr></table></figure>
+
+<p>注意，只有<code>rmmovq</code>不改变条件寄存器的值，所以我们也可以把<code>andq</code>插进中间来消除气泡。</p>
+<p>CPE 值为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Average CPE     <span class="number">8.16</span></span><br><span class="line">Score   <span class="number">46.9</span>/<span class="number">60.0</span></span><br></pre></td></tr></table></figure>
+
+<p>这一步的提升是巨大的！我的分数终于像点样子了！</p>
+<h2 id="进一步优化"><a href="#进一步优化" class="headerlink" title="进一步优化"></a>进一步优化</h2><p>这里先留个坑。</p>
+<p>暂且截图记录我<strong>目前</strong>为止的最高成就：</p>
+<p>运行正确：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220313213326792.png" alt="image-20220313213326792"></p>
+<p>分数为：46.8</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220313213349365.png" alt="image-20220313213349365"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>读 CSAPP 第 4 章时，我理解得很不通透，部分内容甚至有些迷糊。而做完了本实验，通过亲自设计指令，亲自模拟流水线的工作过程并思考如何优化，我对处理器体系结构有了更深的感悟，有一种了然于胸的感觉。</li>
+<li>CMU 的这两位大神老师 Randal E. Bryant 和 David R. O’Hallaron 简直令我佩服得五体投地。我本以为他们只是从理论层面上将第 4 章的处理器指令，流水线如何设计等等教授给我们。没想到，他们竟然真正设计实现了这样一套完整的<code>Y86-64</code>模拟器、测试工具供我们学习。本实验尤其是 Part C 每优化一次就能立即看到自己的分数，这犹如游戏闯关一般的体验令我着迷。这一切要归功于两位老师细致的设计，希望有生之年能见他们一次！</li>
+<li>作为一个完美主义者，我在 Part C 部分却没有拿到满分，这简直是无法忍受的。但是我着实学业繁忙，不能在这个实验耗费太多时间，只能暂且搁置，暑假回来继续干它！</li>
+<li>本实验耗时 3 天，约 17 小时</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="西门吹水 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="西门吹水 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>西门吹水
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://deconx.top/2022/03/13/CSAPP-Lab04/" title="CSAPP-Lab04 Architecture Lab 记录">https://deconx.top/2022/03/13/CSAPP-Lab04/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 计算机科学</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/03/CSAPP-Lab03/" rel="prev" title="CSAPP-Lab03 Attack Lab 记录">
+      <i class="fa fa-chevron-left"></i> CSAPP-Lab03 Attack Lab 记录
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/03/21/CSAPP-Lab05/" rel="next" title="CSAPP-Lab05 Cache Lab 记录">
+      CSAPP-Lab05 Cache Lab 记录 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">实验概览</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-A"><span class="nav-number">2.</span> <span class="nav-text">Part A</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#sum-list"><span class="nav-number">2.1.</span> <span class="nav-text">sum_list</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rsum-list"><span class="nav-number">2.2.</span> <span class="nav-text">rsum_list</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#copy-block"><span class="nav-number">2.3.</span> <span class="nav-text">copy_block</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-B"><span class="nav-number">3.</span> <span class="nav-text">Part B</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9E%E9%A1%BE%EF%BC%9A%E6%8C%87%E4%BB%A4%E5%A4%84%E7%90%86%E6%A1%86%E6%9E%B6"><span class="nav-number">3.1.</span> <span class="nav-text">回顾：指令处理框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iaddq%E6%8C%87%E4%BB%A4%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">iaddq指令执行过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9HCL%E4%BB%A3%E7%A0%81"><span class="nav-number">3.3.</span> <span class="nav-text">修改HCL代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95SEQ"><span class="nav-number">3.4.</span> <span class="nav-text">测试SEQ</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%A4%B1%E8%B4%A5%E5%A4%84%E7%90%86%E5%8A%9E%E6%B3%95"><span class="nav-number">3.4.1.</span> <span class="nav-text">编译失败处理办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">3.4.2.</span> <span class="nav-text">测试</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-C"><span class="nav-number">4.</span> <span class="nav-text">Part C</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A9%E7%94%A8iaddq"><span class="nav-number">4.1.</span> <span class="nav-text">利用iaddq</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF%E5%B1%95%E5%BC%80"><span class="nav-number">4.2.</span> <span class="nav-text">循环展开</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%A9%E4%BD%99%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86"><span class="nav-number">4.3.</span> <span class="nav-text">剩余数据处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B6%88%E9%99%A4%E6%B0%94%E6%B3%A1"><span class="nav-number">4.4.</span> <span class="nav-text">消除气泡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E4%B8%80%E6%AD%A5%E4%BC%98%E5%8C%96"><span class="nav-number">4.5.</span> <span class="nav-text">进一步优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="西门吹水"
+      src="/images/panda.jpg">
+  <p class="site-author-name" itemprop="name">西门吹水</p>
+  <div class="site-description" itemprop="description">天行健，君子以自强不息</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Deconx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Deconx" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:1067017428@qq.com" title="E-Mail → mailto:1067017428@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">null </a><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=2022009343" rel="noopener" target="_blank">鄂ICP备2022009343号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">西门吹水</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">127k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">1:56</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

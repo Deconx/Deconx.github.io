@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/tiger.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/tiger.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/tiger.svg">
+  <link rel="mask-icon" href="/images/tiger.svg" color="#222">
+  <link rel="manifest" href="/images/tiger.svg">
+  <meta name="msapplication-config" content="/images/tiger.svg">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"deconx.top","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":-1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="实验概览Cache Lab 分为两部分，编写一个高速缓存模拟器以及要求优化矩阵转置的核心函数，以最小化对模拟的高速缓存的不命中次数。本实验对我这种代码能力较差的人来说还是很有难度的。 在开始实验前，强烈建议先阅读以下学习资料： 实验说明文档：Writeup CMU 关于 Cache Lab 的 PPT：Cache Lab Implementation and Blocking CMU 关于分块优化">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CSAPP-Lab05 Cache Lab 记录">
+<meta property="og:url" content="https://deconx.top/2022/03/21/CSAPP-Lab05/index.html">
+<meta property="og:site_name" content="潜龙勿用">
+<meta property="og:description" content="实验概览Cache Lab 分为两部分，编写一个高速缓存模拟器以及要求优化矩阵转置的核心函数，以最小化对模拟的高速缓存的不命中次数。本实验对我这种代码能力较差的人来说还是很有难度的。 在开始实验前，强烈建议先阅读以下学习资料： 实验说明文档：Writeup CMU 关于 Cache Lab 的 PPT：Cache Lab Implementation and Blocking CMU 关于分块优化">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320192922277.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320211615190.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320223422026.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320224801835.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320230345066.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320232835429.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321083600461.png">
+<meta property="og:image" content="https://deconx.top/Img/image-20220321084213463.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321090753034.png">
+<meta property="og:image" content="https://deconx.top/Img/image-20220320151955781.png">
+<meta property="og:image" content="https://deconx.top/Img/image-20220320153742897.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320160556089.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321100111526.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321122954046.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321123518762.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321124218012.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321124555383.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320174115169.png">
+<meta property="article:published_time" content="2022-03-21T11:28:24.000Z">
+<meta property="article:modified_time" content="2022-06-10T15:56:16.952Z">
+<meta property="article:author" content="西门吹水">
+<meta property="article:tag" content="计算机科学">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320192922277.png">
+
+<link rel="canonical" href="https://deconx.top/2022/03/21/CSAPP-Lab05/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CSAPP-Lab05 Cache Lab 记录 | 潜龙勿用</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?71065cef1d4b78e896256ce80437f4e3";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">潜龙勿用</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">12</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Deconx" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://deconx.top/2022/03/21/CSAPP-Lab05/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/panda.jpg">
+      <meta itemprop="name" content="西门吹水">
+      <meta itemprop="description" content="天行健，君子以自强不息">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="潜龙勿用">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CSAPP-Lab05 Cache Lab 记录
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-21 19:28:24" itemprop="dateCreated datePublished" datetime="2022-03-21T19:28:24+08:00">2022-03-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-10 23:56:16" itemprop="dateModified" datetime="2022-06-10T23:56:16+08:00">2022-06-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CSAPP-Lab/" itemprop="url" rel="index"><span itemprop="name">CSAPP Lab</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>10 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验概览"><a href="#实验概览" class="headerlink" title="实验概览"></a>实验概览</h1><p>Cache Lab 分为两部分，编写一个高速缓存模拟器以及要求优化矩阵转置的核心函数，以最小化对模拟的高速缓存的不命中次数。本实验对我这种代码能力较差的人来说还是很有难度的。</p>
+<p>在开始实验前，强烈建议先阅读以下<strong>学习资料</strong>：</p>
+<p>实验说明文档：<a target="_blank" rel="noopener" href="http://csapp.cs.cmu.edu/2e/cachelab.pdf">Writeup</a></p>
+<p>CMU 关于 Cache Lab 的 PPT：<a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/afs/cs/academic/class/15213-f15/www/recitations/rec07.pdf">Cache Lab Implementation and Blocking</a></p>
+<p>CMU 关于分块优化的讲解： <a target="_blank" rel="noopener" href="http://csapp.cs.cmu.edu/2e/waside/waside-blocking.pdf">Using Blocking to Increase Temporal Locality</a> </p>
+<p><strong>本人踩的坑：</strong>我的 lab 环境是 Windows11 + wsl2。由于 wsl2 跨 OS 磁盘访问非常慢，而我是将文件放在 Windows 下进行的实验，Part B 部分的测试结果甚至无法跑出来！所以，建议用虚拟机进行实验，如果你也是 wsl2 用户，请将实验文件放在 wsl2 自己的目录下！</p>
+<h1 id="Part-A-Writing-a-Cache-Simulator"><a href="#Part-A-Writing-a-Cache-Simulator" class="headerlink" title="Part A: Writing a Cache Simulator"></a>Part A: Writing a Cache Simulator</h1><p>Part A 要求在<code>csim.c</code>下编写一个高速缓存模拟器来对内存读写操作进行正确的反馈。这个模拟器有 6 个参数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Usage: ./csim-ref [-hv] -s &lt;s&gt; -E &lt;E&gt; -b &lt;b&gt; -t &lt;tracefile&gt;</span><br><span class="line">	• -h: Optional help flag that prints usage info</span><br><span class="line">	• -v: Optional verbose flag that displays trace info</span><br><span class="line">	• -s &lt;s&gt;: Number of <span class="built_in">set</span> index <span class="title function_">bits</span> <span class="params">(S = <span class="number">2</span>s is the number of sets)</span></span><br><span class="line">	• -E &lt;E&gt;: <span class="title function_">Associativity</span> <span class="params">(number of lines per <span class="built_in">set</span>)</span></span><br><span class="line">	• -b &lt;b&gt;: Number of block <span class="title function_">bits</span> <span class="params">(B = <span class="number">2b</span> is the block size)</span></span><br><span class="line">	• -t &lt;tracefile&gt;: Name of the valgrind trace to replay</span><br></pre></td></tr></table></figure>
+
+<p>其中，输入的 trace 的格式为：<code>[space]operation address, size</code>，operation 有 4 种：</p>
+<ul>
+<li><code>I</code>表示加载指令</li>
+<li><code>L</code> 加载数据</li>
+<li><code>S</code>存储数据</li>
+<li><code>M</code> 修改数据</li>
+</ul>
+<p>模拟器不需要考虑加载指令，而<code>M</code>指令就相当于先进行<code>L</code>再进行<code>S</code>，因此，要考虑的情况其实并不多。模拟器要做出的反馈有 3 种：</p>
+<ul>
+<li><code>hit</code>：命中，表示要操作的数据在对应组的其中一行</li>
+<li><code>miss</code>：不命中，表示要操作的数据不在对应组的任何一行</li>
+<li><code>eviction</code>：驱赶，表示要操作的数据的对应组已满，进行了替换操作</li>
+</ul>
+<h2 id="回顾：Cache-结构"><a href="#回顾：Cache-结构" class="headerlink" title="回顾：Cache 结构"></a>回顾：Cache 结构</h2><p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320192922277.png" alt="image-20220320192922277"></p>
+<p>Cache 类似于一个二维数组，它有$S&#x3D;2^s$组，每组有 E 行，每行存储的字节也是固定的。其中，每行都有一个有效位，和一个标记位。想要查找到对应的字节，我们的地址需要三部分组成：</p>
+<ul>
+<li>s，索引位，找到对应的组序号</li>
+<li>tag，标记位，在组中的每一行进行匹配，判断能否命中</li>
+<li>b，块偏移，表明在找到的行中的具体位置。本实验不考虑块便宜，完全可以忽略。</li>
+</ul>
+<p>那么，Cache 中的有效位是干什么的呢？判断该行是否为空。这里有一个概念：<strong>冷不命中</strong>，表示该缓存块为空造成的不命中。而一旦确定不命中不是冷不命中，那么就需要考虑行替换的问题了。我认为，行替换关乎着 Cache 的效率，是 Cache 设计的核心。</p>
+<h2 id="回顾：替换策略"><a href="#回顾：替换策略" class="headerlink" title="回顾：替换策略"></a>回顾：替换策略</h2><p>当 CPU 要处理的字不在组中任何一行，且组中没有一个空行，那就必须从里面选取一个非空行进行替换。选取哪个空行进行替换呢？书上给了我们两种策略：</p>
+<ul>
+<li>LFU，最不常使用策略。替换在过去某个窗口时间内引用次数最少的那一行</li>
+<li>LRU，最近最少使用策略。替换最后一次访问时间最久远的哪一行</li>
+</ul>
+<p>本实验要求采取的策略为 <strong>LRU</strong>。</p>
+<p>那么代码如何实现呢？我的第一反应是实现 S 个双向链表，每个链表有 E 个结点，对应于组中的每一行，每当访问了其中的一行，就把这个结点移动到链表的头部，后续替换的时候只需要选择链尾的结点就好了。但是，为了简单，我还是选择了 PPT 中提示的相对简单的设置<strong>时间戳</strong>的办法，双向链表以后有时间再写吧。</p>
+<p>下面就可以正式开始 Part A 了！我对我写的模拟器的核心部分进行讲解。</p>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p>定义了<code>Cache</code>结构体</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">cache_</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">int</span> S;</span><br><span class="line">    <span class="type">int</span> E;</span><br><span class="line">    <span class="type">int</span> B;</span><br><span class="line">    Cache_line **line;</span><br><span class="line">&#125; Cache;</span><br></pre></td></tr></table></figure>
+
+<p>用<code>Cache</code>表示一个缓存，它包括 S, B, E 等特征，以及前面说过的，每一个缓存类似于一个二位数组，数组的每一个元素就是缓存中的行所以用一个<code>line</code>来表示这一信息：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">cache_line</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">int</span> valid;     <span class="comment">//有效位</span></span><br><span class="line">    <span class="type">int</span> tag;       <span class="comment">//标记位</span></span><br><span class="line">    <span class="type">int</span> time_tamp; <span class="comment">//时间戳</span></span><br><span class="line">&#125; Cache_line;</span><br></pre></td></tr></table></figure>
+
+<p><code>valid</code>以及<code>tag</code>不再赘述，这里的<code>time_tamp</code>表示时间戳，是 LRU 策略需要用到的特征。Cache 初始值设置如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">Init_Cache</span><span class="params">(<span class="type">int</span> s, <span class="type">int</span> E, <span class="type">int</span> b)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> S = <span class="number">1</span> &lt;&lt; s;</span><br><span class="line">    <span class="type">int</span> B = <span class="number">1</span> &lt;&lt; b;</span><br><span class="line">    cache = (Cache *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(Cache));</span><br><span class="line">    cache-&gt;S = S;</span><br><span class="line">    cache-&gt;E = E;</span><br><span class="line">    cache-&gt;B = B;</span><br><span class="line">    cache-&gt;line = (Cache_line **)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(Cache_line *) * S);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; S; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        cache-&gt;line[i] = (Cache_line *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(Cache_line) * E);</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; E; j++)</span><br><span class="line">        &#123;</span><br><span class="line">            cache-&gt;line[i][j].valid = <span class="number">0</span>; <span class="comment">//初始时，高速缓存是空的</span></span><br><span class="line">            cache-&gt;line[i][j].tag = <span class="number">-1</span>;</span><br><span class="line">            cache-&gt;line[i][j].time_tamp = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意，时间戳初始设置为0。</p>
+<h2 id="LRU-时间戳实现"><a href="#LRU-时间戳实现" class="headerlink" title="LRU 时间戳实现"></a>LRU 时间戳实现</h2><p>我的逻辑是时间戳越大则表示该行最后访问的时间越久远。先看 LRU 更新的代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">update</span><span class="params">(<span class="type">int</span> i, <span class="type">int</span> op_s, <span class="type">int</span> op_tag)</span>&#123;</span><br><span class="line">    cache-&gt;line[op_s][i].valid=<span class="number">1</span>;</span><br><span class="line">    cache-&gt;line[op_s][i].tag = op_tag;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> k = <span class="number">0</span>; k &lt; cache-&gt;E; k++)</span><br><span class="line">        <span class="keyword">if</span>(cache-&gt;line[op_s][k].valid==<span class="number">1</span>)</span><br><span class="line">            cache-&gt;line[op_s][k].time_tamp++;</span><br><span class="line">    cache-&gt;line[op_s][i].time_tamp = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码在找到要进行的操作行后调用（无论是不命中还是命中，还是驱逐后）。前两行是对有效位和标志位的设置，与时间戳无关，主要关注后几行：</p>
+<ul>
+<li>遍历组中每一行，并将它们的值加1，也就是说每一行在进行一次操作后时间戳都会变大，表示它离最后操作的时间变久</li>
+<li>将本次操作的行时间戳设置为最小，也就是0</li>
+</ul>
+<p>由此，每次只需要找到时间戳最大的行进行替换就可以了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">find_LRU</span><span class="params">(<span class="type">int</span> op_s)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> max_index = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> max_stamp = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; cache-&gt;E; i++)&#123;</span><br><span class="line">        <span class="keyword">if</span>(cache-&gt;line[op_s][i].time_tamp &gt; max_stamp)&#123;</span><br><span class="line">            max_stamp = cache-&gt;line[op_s][i].time_tamp;</span><br><span class="line">            max_index = i;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> max_index;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存搜索及更新"><a href="#缓存搜索及更新" class="headerlink" title="缓存搜索及更新"></a>缓存搜索及更新</h2><p>先解决比较核心的问题，在得知要操作的组<code>op_s</code>以及标志位<code>op_tag</code>后，判断是<code>miss</code>还是<code>hit</code>还是应该<code>eviction</code>调用<code>find_LRU</code>。</p>
+<p>先判断是<code>miss</code>还是<code>hit</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">get_index</span><span class="params">(<span class="type">int</span> op_s, <span class="type">int</span> op_tag)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; cache-&gt;E; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (cache-&gt;line[op_s][i].valid &amp;&amp; cache-&gt;line[op_s][i].tag == op_tag)</span><br><span class="line">            <span class="keyword">return</span> i;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>遍历所有行，如果某一行有效，且标志位相同，则<code>hit</code>，返回该索引。否则，<code>miss</code>，返回 -1。当接收到-1后，有两种情况：</p>
+<ul>
+<li>冷不命中。组中有空行，只不过还未操作过，有效位为0，找到这个空行即可</li>
+<li>所有行都满了。那么就要用到上面得 LRU 进行选择驱逐</li>
+</ul>
+<p>所以，设计一个判满的函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">is_full</span><span class="params">(<span class="type">int</span> op_s)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; cache-&gt;E; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (cache-&gt;line[op_s][i].valid == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">return</span> i;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>扫描完成后，得到对应行的索引值，就可以调用 LRU 更新函数进行更新了。整体调用如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">update_info</span><span class="params">(<span class="type">int</span> op_tag, <span class="type">int</span> op_s)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> index = get_index(op_s, op_tag);</span><br><span class="line">    <span class="keyword">if</span> (index == <span class="number">-1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        miss_count++;</span><br><span class="line">        <span class="keyword">if</span> (verbose)</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;miss &quot;</span>);</span><br><span class="line">        <span class="type">int</span> i = is_full(op_s);</span><br><span class="line">        <span class="keyword">if</span>(i==<span class="number">-1</span>)&#123;</span><br><span class="line">            eviction_count++;</span><br><span class="line">            <span class="keyword">if</span>(verbose) <span class="built_in">printf</span>(<span class="string">&quot;eviction&quot;</span>);</span><br><span class="line">            i = find_LRU(op_s);</span><br><span class="line">        &#125;</span><br><span class="line">        update(i,op_s,op_tag);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        hit_count++;</span><br><span class="line">        <span class="keyword">if</span>(verbose)</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;hit&quot;</span>);</span><br><span class="line">        update(index,op_s,op_tag);    </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>至此，Part A 的核心部分函数就编写完了，下面的内容属于是技巧性的部分，与架构无关。</p>
+<h2 id="指令解析"><a href="#指令解析" class="headerlink" title="指令解析"></a>指令解析</h2><p>设计的数据结构解决了对 Cache 的操作问题，LRU 时间戳的实现解决了核心的驱逐问题，缓存扫描解决了对块中哪一列进行操作的问题，而应该对哪一块进行操作呢？接下来要解决的就是指令的解析问题了。</p>
+<p>输入数据为<code>[space]operation address, size</code>的形式，<code>operation</code>很容易获取，重要的是从<code>address</code>中分别获取我们需要的<code>s</code>和<code>tag</code>，<code>address</code>结构如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320211615190.png" alt="image-20220320211615190"></p>
+<p>这就用到了第二章以及<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/472188244">Data Lab</a>的知识。tag 很容易得到，右移 (b + s) 位即可：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> op_tag = address &gt;&gt; (s + b);</span><br></pre></td></tr></table></figure>
+
+<p>获取 s，考虑先右移 b 位，再用无符号 0xFF… 右移后进行与操作将 tag 抹去。为什么要用无符号 0xFF… 右移呢？因为C语言中的右移为算术右移，有符号数右移补位的数为符号位。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> op_s = (address &gt;&gt; b) &amp; ((<span class="type">unsigned</span>)(<span class="number">-1</span>) &gt;&gt; (<span class="number">8</span> * <span class="keyword">sizeof</span>(<span class="type">unsigned</span>) - s));</span><br></pre></td></tr></table></figure>
+
+<p>由于数据读写对于本模拟器而言是没有区别的，因此不同的指令对应的只是 Cache 更新次数的问题：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">get_trace</span><span class="params">(<span class="type">int</span> s, <span class="type">int</span> E, <span class="type">int</span> b)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *pFile;</span><br><span class="line">    pFile = fopen(t, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (pFile == <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">char</span> identifier;</span><br><span class="line">    <span class="type">unsigned</span> address;</span><br><span class="line">    <span class="type">int</span> size;</span><br><span class="line">    <span class="comment">// Reading lines like &quot; M 20,1&quot; or &quot;L 19,3&quot;</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="built_in">fscanf</span>(pFile, <span class="string">&quot; %c %x,%d&quot;</span>, &amp;identifier, &amp;address, &amp;size) &gt; <span class="number">0</span>) <span class="comment">// I读不进来,忽略---size没啥用</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//想办法先得到标记位和组序号</span></span><br><span class="line">        <span class="type">int</span> op_tag = address &gt;&gt; (s + b);</span><br><span class="line">        <span class="type">int</span> op_s = (address &gt;&gt; b) &amp; ((<span class="type">unsigned</span>)(<span class="number">-1</span>) &gt;&gt; (<span class="number">8</span> * <span class="keyword">sizeof</span>(<span class="type">unsigned</span>) - s));</span><br><span class="line">        <span class="keyword">switch</span> (identifier)</span><br><span class="line">        &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;M&#x27;</span>: <span class="comment">//一次存储一次加载</span></span><br><span class="line">            update_info(op_tag, op_s);</span><br><span class="line">            update_info(op_tag, op_s);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;L&#x27;</span>:</span><br><span class="line">            update_info(op_tag, op_s);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;S&#x27;</span>:</span><br><span class="line">            update_info(op_tag, op_s);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    fclose(pFile);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>update_info</code>就是对 Cache 进行更新的函数，前面已经讲解。如果指令是<code>M</code>则一次存储一次加载，总共更新两次，其他指令只用更新一次，而<code>I</code>无需考虑。</p>
+<h2 id="命令行参数获取"><a href="#命令行参数获取" class="headerlink" title="命令行参数获取"></a>命令行参数获取</h2><p>通过阅读<a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/afs/cs/academic/class/15213-f15/www/recitations/rec07.pdf">Cache Lab Implementation and Blocking</a>的提示，我们使用<code>getopt()</code>函数来获取命令行参数的字符串形式，然后用<code>atoi()</code>转换为要用的参数，最后用<code>switch</code>语句跳转到对应功能块。</p>
+<p>代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> opt;</span><br><span class="line">    <span class="type">int</span> s, E, b;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * s:S=2^s是组的个数</span></span><br><span class="line"><span class="comment">     * E:每组中有多少行</span></span><br><span class="line"><span class="comment">     * b:B=2^b每个缓冲块的字节数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">-1</span> != (opt = getopt(argc, argv, <span class="string">&quot;hvs:E:b:t:&quot;</span>)))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">switch</span> (opt)</span><br><span class="line">        &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;h&#x27;</span>:</span><br><span class="line">            print_help();</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;v&#x27;</span>:</span><br><span class="line">            verbose = <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;s&#x27;</span>:</span><br><span class="line">            s = atoi(optarg);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;E&#x27;</span>:</span><br><span class="line">            E = atoi(optarg);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;b&#x27;</span>:</span><br><span class="line">            b = atoi(optarg);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&#x27;t&#x27;</span>:</span><br><span class="line">            <span class="built_in">strcpy</span>(t, optarg);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            print_help();</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    Init_Cache(s, E, b); <span class="comment">//初始化一个cache</span></span><br><span class="line">    get_trace(s, E, b);</span><br><span class="line">    free_Cache();</span><br><span class="line">    <span class="comment">// printSummary(hit_count, miss_count, eviction_count)</span></span><br><span class="line">    printSummary(hit_count, miss_count, eviction_count);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>完整代码太长，可访问我的<code>Github</code>仓库查看：</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/Deconx/CSAPP-Lab">https://github.com/Deconx/CSAPP-Lab</a></p>
+<h1 id="Part-B-Optimizing-Matrix-Transpose"><a href="#Part-B-Optimizing-Matrix-Transpose" class="headerlink" title="Part B: Optimizing Matrix Transpose"></a>Part B: Optimizing Matrix Transpose</h1><p>Part B 是在<code>trans.c</code>中编写矩阵转置的函数，在一个 s &#x3D; 5,  E &#x3D; 1,  b &#x3D; 5 的缓存中进行读写，使得 miss 的次数最少。测试矩阵的参数以及 miss 次数对应的分数如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320223422026.png" alt="image-20220320223422026"></p>
+<p>要求最多只能声明12个本地变量。</p>
+<p>根据课本以及 PPT 的提示，这里肯定要使用<strong>矩阵分块</strong>进行优化</p>
+<h2 id="32-×-32"><a href="#32-×-32" class="headerlink" title="32 × 32"></a>32 × 32</h2><p><strong>开始之前，我们先了解一下何为分块？为什么分块？</strong></p>
+<p> s &#x3D; 5,  E &#x3D; 1,  b &#x3D; 5 的缓存有32组，每组一行，每行存 8 个<code>int</code>，如图：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320224801835.png" alt="image-20220320224801835"></p>
+<p>就以这个缓存为例，考虑暴力转置的做法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">trans_submit</span><span class="params">(<span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> A[N][M], <span class="type">int</span> B[M][N])</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; N; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; M; j++) &#123;</span><br><span class="line">            <span class="type">int</span> tmp = A[i][j];</span><br><span class="line">            B[j][i] = tmp;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里我们会按行优先读取 <code>A</code> 矩阵，然后一列一列地写入 <code>B</code> 矩阵。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320230345066.png" alt="image-20220320230345066"></p>
+<p>以第1行为例，在从内存读 <code>A[0][0]</code> 的时候，除了 <code>A[0][0]</code> 被加载到缓存中，它之后的 <code>A[0][1]---A[0][7]</code> 也会被加载进缓存。</p>
+<p>但是内容写入 <code>B</code> 矩阵的时候是一列一列地写入，在列上相邻的元素不在一个内存块上，这样每次写入都不命中缓存。并且一列写完之后再返回，原来的缓存可能被覆盖了，这样就又会不命中。我们来定量分析。</p>
+<p>缓存只够存储一个矩阵的四分之一，<code>A</code>中的元素对应的缓存行每隔8行就会重复。<code>A</code>和<code>B</code>的地址由于取余关系，每个元素对应的地址是相同的。各个元素对应缓存行如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320232835429.png" alt="image-20220320232835429"></p>
+<p>对于<code>A</code>，每8个<code>int</code>就会占满缓存的一组，所以每一行会有 32&#x2F;8 &#x3D; 4 次不命中；而对于<code>B</code>，考虑最坏情况，每一列都有 32 次不命中，由此，算出总不命中次数为 4 × 32 + 32 × 32 &#x3D; 1152。拿程序跑一下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321083600461.png" alt="image-20220321083600461"></p>
+<p>结果为 1183 比预估多了一点，这是对角线部分两者冲突造成的，后面会讲到。</p>
+<p><strong>回过头来，思考暴力做法：</strong></p>
+<p><img src="/../../../Img/image-20220321084213463.png" alt="image-20220321084213463"></p>
+<p>在写入<code>B</code>的前 8 行后，<code>B</code>的<code>D</code>区域就全部进入了缓存，此时如果能对<code>D</code>进行操作，那么就能利用上缓存的内容，不会<code>miss</code>；但是，暴力解法接下来操作的是<code>C</code>，每一个元素的写都要驱逐之前的缓存区，当来到第 2 列继续写<code>D</code>时，它对应的缓存行很可能已经被驱逐了，于是又要<code>miss</code>，也就是说，暴力解法的问题在于没有充分利用上已经进入缓存的元素。</p>
+<p>分块解决的就是同一个矩阵内部缓存块相互替换的问题。</p>
+<p>由上述分析，显然应考虑 8 × 8 分块，这样在块的内部不会冲突，接下来判断<code>A</code>与<code>B</code>之间会不会冲突</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321090753034.png" alt="image-20220321090753034"></p>
+<p><code>A</code>中标红的块占用的是缓存的第 0，4，8，12，16，20，24，28组，而<code>B</code>中标红的块占用的是缓存的第1，5，9，13，17，15，29组，刚好不会冲突。事实上，<strong>除了对角线</strong>，<code>A</code>与<code>B</code>中对应的块都不会冲突。所以，我们的想法是可行的，写出代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">transpose_submit</span><span class="params">(<span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> A[N][M], <span class="type">int</span> B[M][N])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; N; i += <span class="number">8</span>)</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; M; j += <span class="number">8</span>)</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; <span class="number">8</span>; k++)</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> s = <span class="number">0</span>; s &lt; <span class="number">8</span>; s++)</span><br><span class="line">                    B[j + s][i + k] = A[i + k][j + s];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于<code>A</code>中每一个操作块，只有每一行的第一个元素会不命中，所以为8次不命中；对于<code>B</code>中每一个操作块，只有每一列的第一个元素会不命中，所以也为 8 次不命中。总共<code>miss</code>次数为：8 × 16 × 2 &#x3D; 256</p>
+<p>跑出结果：</p>
+<p><img src="/../../../Img/image-20220320151955781.png" alt="image-20220320151955781"></p>
+<p><code>miss</code>次数为343，与我们计算的结果差距非常大，没有得到满分，这是为什么呢？这就要考虑到对角线上的块了。<code>A</code>与<code>B</code>对角线上的块在缓存中对应的位置是相同的，而它们在转置过程中位置不变，所以复制过程中会发生相互冲突。</p>
+<p>以<code>A</code>的一个对角线块<code>p</code>，<code>B</code>与<code>p</code>相应的对角线块<code>q</code>为例，复制前， <code>p</code> 在缓存中。 复制时，<code>q</code>会驱逐<code>p</code>。 下一个开始复制 <code>p</code> 又被重新加载进入缓存驱逐 <code>q</code>，这样就会多产生两次<code>miss</code>。</p>
+<p>如何解决这种问题呢？题目给了我们提示：</p>
+<blockquote>
+<p>You are allowed to define at most 12 local variables of type int per transpose function</p>
+</blockquote>
+<p>考虑使用 8 个本地变量一次性存下 <code>A</code> 的一行后，再复制给 <code>B</code>。代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">transpose_submit</span><span class="params">(<span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> A[N][M], <span class="type">int</span> B[M][N])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">32</span>; i += <span class="number">8</span>)</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> j = <span class="number">0</span>; j &lt; <span class="number">32</span>; j += <span class="number">8</span>)</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k = i; k &lt; i + <span class="number">8</span>; k++)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="type">int</span> a_0 = A[k][j];</span><br><span class="line">                <span class="type">int</span> a_1 = A[k][j+<span class="number">1</span>];</span><br><span class="line">                <span class="type">int</span> a_2 = A[k][j+<span class="number">2</span>];</span><br><span class="line">                <span class="type">int</span> a_3 = A[k][j+<span class="number">3</span>];</span><br><span class="line">                <span class="type">int</span> a_4 = A[k][j+<span class="number">4</span>];</span><br><span class="line">                <span class="type">int</span> a_5 = A[k][j+<span class="number">5</span>];</span><br><span class="line">                <span class="type">int</span> a_6 = A[k][j+<span class="number">6</span>];</span><br><span class="line">                <span class="type">int</span> a_7 = A[k][j+<span class="number">7</span>];</span><br><span class="line">                B[j][k] = a_0;</span><br><span class="line">                B[j+<span class="number">1</span>][k] = a_1;</span><br><span class="line">                B[j+<span class="number">2</span>][k] = a_2;</span><br><span class="line">                B[j+<span class="number">3</span>][k] = a_3;</span><br><span class="line">                B[j+<span class="number">4</span>][k] = a_4;</span><br><span class="line">                B[j+<span class="number">5</span>][k] = a_5;</span><br><span class="line">                B[j+<span class="number">6</span>][k] = a_6;</span><br><span class="line">                B[j+<span class="number">7</span>][k] = a_7;</span><br><span class="line">            &#125;         </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于非对角线上的块，本身就没有额外的冲突；对于对角线上的块，写入<code>A</code>每一行的第一个元素后，这一行的元素都进入了缓存，我们就立即用本地变量存下这 8 个元素，随后再复制给<code>B</code>。这样，就避免了第一个元素复制时，<code>B</code>把<code>A</code>的缓冲行驱逐，导致没有利用上<code>A</code>的缓冲。</p>
+<p>结果如下：</p>
+<p><img src="/../../../Img/image-20220320153742897.png" alt="image-20220320153742897"></p>
+<p><code>miss</code>次数为 287，满分！</p>
+<h2 id="64-×-64"><a href="#64-×-64" class="headerlink" title="64 × 64"></a>64 × 64</h2><p>每 4 行就会占满一个缓存，先考虑 4 × 4 分块，结果如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320160556089.png" alt="image-20220320160556089"></p>
+<p>结果还不错，虽然没有得到满分。</p>
+<p>还是考虑 8 × 8 分块，由于存在着每 4 行就会占满一个缓存的问题，在分块内部处理时就需要技巧了，我们把分块内部分成 4 个 4 × 4 的小分块分别处理：</p>
+<ul>
+<li>第一步，将<code>A</code>的左上和右上一次性复制给<code>B</code></li>
+<li>第二步，用本地变量把<code>B</code>的右上角存储下来</li>
+<li>第三步，将<code>A</code>的左下复制给<code>B</code>的右上</li>
+<li>第四步，利用上述存储<code>B</code>的右上角的本地变量，把<code>A</code>的右上复制给<code>B</code>的左下</li>
+<li>第五步，把<code>A</code>的右下复制给<code>B</code>的右下</li>
+</ul>
+<p>画出图解如下：</p>
+<p><strong>这里的<code>A</code>和<code>B</code>均表示两个矩阵中的 8 × 8 块</strong></p>
+<p><strong>第 1 步：</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321100111526.png" alt="image-20220321100111526"></p>
+<p>此时<code>B</code>的前 4 行就在缓存中了，接下来考虑利用这个缓存 。可以看到，为了利用<code>A</code>的缓存，第 2 块放置的位置实际上是错的，接下来就用本地变量保存<code>B</code>中 2 块的内容</p>
+<p><strong>第 2 步：</strong></p>
+<p>用本地变量把<code>B</code>的 2 块存储下来</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> k = j; k &lt; j + <span class="number">4</span>; k++)&#123;</span><br><span class="line">	a_0 = B[k][i + <span class="number">4</span>];</span><br><span class="line">    a_1 = B[k][i + <span class="number">5</span>];</span><br><span class="line">    a_2 = B[k][i + <span class="number">6</span>];</span><br><span class="line">    a_3 = B[k][i + <span class="number">7</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第 3 步：</strong></p>
+<p>现在缓存中还是存着<code>B</code>中上两块的内容，所以将<code>A</code>的 3 块内容复制给它</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321122954046.png" alt="image-20220321122954046"></p>
+<p><strong>第 4&#x2F;5 步：</strong></p>
+<p>现在缓存已经利用到极致了，可以开辟<code>B</code>的下面两块了</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321123518762.png" alt="image-20220321123518762"></p>
+<p>这样就实现了转置，且消除了同一行中的冲突，具体代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">transpose_64x64</span><span class="params">(<span class="type">int</span> M, <span class="type">int</span> N, <span class="type">int</span> A[N][M], <span class="type">int</span> B[M][N])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">64</span>; i += <span class="number">8</span>)&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; <span class="number">64</span>; j += <span class="number">8</span>)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k = i; k &lt; i + <span class="number">4</span>; k++)&#123;</span><br><span class="line">                <span class="comment">// 得到A的第1,2块</span></span><br><span class="line">                a_0 = A[k][j + <span class="number">0</span>];</span><br><span class="line">                a_1 = A[k][j + <span class="number">1</span>];</span><br><span class="line">                a_2 = A[k][j + <span class="number">2</span>];</span><br><span class="line">                a_3 = A[k][j + <span class="number">3</span>];</span><br><span class="line">                a_4 = A[k][j + <span class="number">4</span>];</span><br><span class="line">                a_5 = A[k][j + <span class="number">5</span>];</span><br><span class="line">                a_6 = A[k][j + <span class="number">6</span>];</span><br><span class="line">                a_7 = A[k][j + <span class="number">7</span>];</span><br><span class="line">				<span class="comment">// 复制给B的第1,2块</span></span><br><span class="line">                B[j + <span class="number">0</span>][k] = a_0;</span><br><span class="line">                B[j + <span class="number">1</span>][k] = a_1;</span><br><span class="line">                B[j + <span class="number">2</span>][k] = a_2;</span><br><span class="line">                B[j + <span class="number">3</span>][k] = a_3;</span><br><span class="line">                B[j + <span class="number">0</span>][k + <span class="number">4</span>] = a_4;</span><br><span class="line">                B[j + <span class="number">1</span>][k + <span class="number">4</span>] = a_5;</span><br><span class="line">                B[j + <span class="number">2</span>][k + <span class="number">4</span>] = a_6;</span><br><span class="line">                B[j + <span class="number">3</span>][k + <span class="number">4</span>] = a_7;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k = j; k &lt; j + <span class="number">4</span>; k++)&#123;</span><br><span class="line">                <span class="comment">// 得到B的第2块</span></span><br><span class="line">                a_0 = B[k][i + <span class="number">4</span>];</span><br><span class="line">                a_1 = B[k][i + <span class="number">5</span>];</span><br><span class="line">                a_2 = B[k][i + <span class="number">6</span>];</span><br><span class="line">                a_3 = B[k][i + <span class="number">7</span>];</span><br><span class="line">				<span class="comment">// 得到A的第3块</span></span><br><span class="line">                a_4 = A[i + <span class="number">4</span>][k];</span><br><span class="line">                a_5 = A[i + <span class="number">5</span>][k];</span><br><span class="line">                a_6 = A[i + <span class="number">6</span>][k];</span><br><span class="line">                a_7 = A[i + <span class="number">7</span>][k];</span><br><span class="line">				<span class="comment">// 复制给B的第2块</span></span><br><span class="line">                B[k][i + <span class="number">4</span>] = a_4;</span><br><span class="line">                B[k][i + <span class="number">5</span>] = a_5;</span><br><span class="line">                B[k][i + <span class="number">6</span>] = a_6;</span><br><span class="line">                B[k][i + <span class="number">7</span>] = a_7;</span><br><span class="line">				<span class="comment">// B原来的第2块移动到第3块</span></span><br><span class="line">                B[k + <span class="number">4</span>][i + <span class="number">0</span>] = a_0;</span><br><span class="line">                B[k + <span class="number">4</span>][i + <span class="number">1</span>] = a_1;</span><br><span class="line">                B[k + <span class="number">4</span>][i + <span class="number">2</span>] = a_2;</span><br><span class="line">                B[k + <span class="number">4</span>][i + <span class="number">3</span>] = a_3;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> k = i + <span class="number">4</span>; k &lt; i + <span class="number">8</span>; k++)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">// 处理第4块</span></span><br><span class="line">                a_4 = A[k][j + <span class="number">4</span>];</span><br><span class="line">                a_5 = A[k][j + <span class="number">5</span>];</span><br><span class="line">                a_6 = A[k][j + <span class="number">6</span>];</span><br><span class="line">                a_7 = A[k][j + <span class="number">7</span>];</span><br><span class="line">                B[j + <span class="number">4</span>][k] = a_4;</span><br><span class="line">                B[j + <span class="number">5</span>][k] = a_5;</span><br><span class="line">                B[j + <span class="number">6</span>][k] = a_6;</span><br><span class="line">                B[j + <span class="number">7</span>][k] = a_7;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321124218012.png" alt="image-20220321124218012"></p>
+<p><code>miss</code>为 1227，通过！</p>
+<h2 id="61-×-67"><a href="#61-×-67" class="headerlink" title="61 × 67"></a>61 × 67</h2><p>这个矩阵的转置要求很松，<code>miss</code>为 2000 以下就可以了。我也无心进行更深入的优化，直接 16 × 16 的分块就能通过。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220321124555383.png" alt="image-20220321124555383"></p>
+<p><code>miss</code>为 1992，擦线满分！</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>先附上满分完结图：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Deconx/ImgHosting/Deconx-pic/image-20220320174115169.png" alt="image-20220320174115169"></p>
+<ul>
+<li>Cache Lab 是我在做前 5 个实验中感觉最痛苦的一个，主要原因在于我的代码能力较弱，逻辑思维能力较差，以后应该加强这方面的训练</li>
+<li>这个实验的 Part A 让我对缓存的设计有了更深入的理解，其中替换策略也值得以后继续研究；Part B 为我展示了计算机之美，一个简简单单的转置函数，无论怎么写，时间复杂度都是$O(n^2)$，然而因为缓冲区的问题，不同代码的性能竟然有着天壤之别。编写函数过程中，对<code>miss</code>的估量与计算很烧脑，但也很有趣</li>
+<li>本实验耗时 2 天，约 20 小时</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="西门吹水 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="西门吹水 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>西门吹水
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://deconx.top/2022/03/21/CSAPP-Lab05/" title="CSAPP-Lab05 Cache Lab 记录">https://deconx.top/2022/03/21/CSAPP-Lab05/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 计算机科学</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/13/CSAPP-Lab04/" rel="prev" title="CSAPP-Lab04 Architecture Lab 记录">
+      <i class="fa fa-chevron-left"></i> CSAPP-Lab04 Architecture Lab 记录
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/03/26/CSAPP-Lab06/" rel="next" title="CSAPP-Lab06 Architecture Lab 记录">
+      CSAPP-Lab06 Architecture Lab 记录 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">实验概览</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-A-Writing-a-Cache-Simulator"><span class="nav-number">2.</span> <span class="nav-text">Part A: Writing a Cache Simulator</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9E%E9%A1%BE%EF%BC%9ACache-%E7%BB%93%E6%9E%84"><span class="nav-number">2.1.</span> <span class="nav-text">回顾：Cache 结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9E%E9%A1%BE%EF%BC%9A%E6%9B%BF%E6%8D%A2%E7%AD%96%E7%95%A5"><span class="nav-number">2.2.</span> <span class="nav-text">回顾：替换策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.3.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LRU-%E6%97%B6%E9%97%B4%E6%88%B3%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.4.</span> <span class="nav-text">LRU 时间戳实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E6%90%9C%E7%B4%A2%E5%8F%8A%E6%9B%B4%E6%96%B0"><span class="nav-number">2.5.</span> <span class="nav-text">缓存搜索及更新</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%87%E4%BB%A4%E8%A7%A3%E6%9E%90"><span class="nav-number">2.6.</span> <span class="nav-text">指令解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%8F%82%E6%95%B0%E8%8E%B7%E5%8F%96"><span class="nav-number">2.7.</span> <span class="nav-text">命令行参数获取</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-B-Optimizing-Matrix-Transpose"><span class="nav-number">3.</span> <span class="nav-text">Part B: Optimizing Matrix Transpose</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#32-%C3%97-32"><span class="nav-number">3.1.</span> <span class="nav-text">32 × 32</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#64-%C3%97-64"><span class="nav-number">3.2.</span> <span class="nav-text">64 × 64</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#61-%C3%97-67"><span class="nav-number">3.3.</span> <span class="nav-text">61 × 67</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="西门吹水"
+      src="/images/panda.jpg">
+  <p class="site-author-name" itemprop="name">西门吹水</p>
+  <div class="site-description" itemprop="description">天行健，君子以自强不息</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Deconx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Deconx" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:1067017428@qq.com" title="E-Mail → mailto:1067017428@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">null </a><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=2022009343" rel="noopener" target="_blank">鄂ICP备2022009343号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">西门吹水</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">127k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">1:56</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
